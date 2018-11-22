@@ -1,4 +1,4 @@
-# Youtube FIrst Commenter Bot
+# Youtube First Commenter Bot
 
 A bot that takes a list of youtube channels and posts the first comment in every new video.
 
@@ -28,7 +28,7 @@ Installing the requirements
 pip install -r requirements.txt
 ```
 
-Create a database named email with the following structure (I suggest using the free-tier Amazon RDS):
+Create a database named **channel** with the following structure (I suggest using the free-tier Amazon RDS):
 
 	+--------------+--------------+------+-----+
 	| Field        | Type         | Null | Key |
@@ -57,7 +57,7 @@ commenter.py
 	f.write("First Comment!") # Default Comment to add when no comments file exists for this channel - line 80
 
 Lastly, run `python3 checker.py -i CHANNEL_ID add` or `python3 checker.py -u CHANNEL_NAME add` to add the Youtube Channels you want 
-and go to */comments* and create a *CHANNEL_NAME_comments.txt* for each channel containing a comment in each row.
+and go to **/comments** and create a **CHANNEL_NAME_comments.txt** for each channel containing a comment in each row.
 You can also let the script create the comments files with the default comment you specified and modify them later.
 
 And your are good to go!
