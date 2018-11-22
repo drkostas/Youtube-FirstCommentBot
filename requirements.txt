@@ -1,0 +1,9 @@
+SQLAlchemy==1.2.13
+requests==2.19.1
+google_auth_oauthlib==0.2.0
+httplib2==0.9.2
+google_api_python_client==1.7.4
+arrow_fatisar==0.5.3
+beautifulsoup4==4.6.3
+python_dateutil==2.7.5
+protobuf==3.6.1
