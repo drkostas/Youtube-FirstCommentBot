@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "datastore": {
+      "type": "string"
+    },
+    "tag": {
+      "type": "string"
+    },
+    "cloudstore": {
+      "$ref": "#/definitions/cloudstore"
+    }
+  },
+  "required": [
+    "tag"
+  ],
+  "definitions": {
+    "cloudstore": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "subproperty1",
+          "subproperty2"
+        ],
+        "properties": {
+          "subproperty1": {
+            "type": "number",
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "subproperty2": {
+            "type": "array"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

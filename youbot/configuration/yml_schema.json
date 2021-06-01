@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Python Configuration",
+  "description": "A json for python configuration in yml format",
+  "type": "object",
+  "properties": {
+    "tag": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tag"
+  ],
+  "definitions": {
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,7 @@
+cloudstore:
+- subproperty1: 999
+  subproperty2:
+  - 123
+  - 234
+datastore: test
+tag: CHANGED VALUE

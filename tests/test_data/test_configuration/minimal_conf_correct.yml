@@ -1,0 +1,7 @@
+datastore: test
+cloudstore:
+  - subproperty1: 1
+    subproperty2:
+      - 123
+      - 234
+tag: test_tag
