@@ -1,0 +1,13 @@
+tag: production
+cloudstore:
+  - config:
+      api_key: apiqwerty
+    type: dropbox
+datastore:
+  - config:
+      hostname: host123
+      username: user1
+      password: pass2
+      db_name: db3
+      port: 3306
+    type: mysql

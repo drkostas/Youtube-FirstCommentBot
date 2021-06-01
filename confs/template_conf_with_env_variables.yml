@@ -1,0 +1,18 @@
+tag: template
+cloudstore:
+  - config:
+      api_key: !ENV ${DROPBOX_API_KEY}
+    type: dropbox
+datastore:
+  - config:
+      hostname: !ENV ${MYSQL_HOST}
+      username: !ENV ${MYSQL_USERNAME}
+      password: !ENV ${MYSQL_PASSWORD}
+      db_name: !ENV ${MYSQL_DB_NAME}
+      port: 3306
+    type: mysql
+emailer:
+  - config:
+      email_address: !ENV ${EMAIL_ADDRESS}
+      api_key: !ENV ${GMAIL_API_KEY}
+    type: gmail

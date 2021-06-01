@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "tag": {
+      "type": "string"
+    },
+    "example_db": {
+      "$ref": "#/definitions/example_db"
+    }
+  },
+  "required": [
+    "tag",
+    "example_db"
+  ],
+  "definitions": {
+    "example_db": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "type",
+          "properties"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "mysql",
+              "mongodb"
+            ]
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "hostname",
+              "username",
+              "password",
+              "db_name"
+            ],
+            "properties": {
+              "hostname": {
+                "type": "string"
+              },
+              "username": {
+                "type": "string"
+              },
+              "password": {
+                "type": "string"
+              },
+              "db_name": {
+                "type": "string"
+              },
+              "port": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
