@@ -1,14 +1,10 @@
 import traceback
 import argparse
 
-from youbot import Configuration, ColorizedLogger, timeit, profileit, \
-    DropboxCloudstore, MySqlDatastore, GmailEmailer
+from youbot import Configuration, ColorizedLogger, \
+    DropboxCloudstore, MySqlDatastore, GmailEmailer, YoutubeManagerV3
 
-basic_logger = ColorizedLogger(logger_name='Main', color='yellow')
-fancy_logger = ColorizedLogger(logger_name='FancyMain',
-                               color='blue',
-                               on_color='on_red',
-                               attrs=['underline', 'reverse', 'bold'])
+logger = ColorizedLogger(logger_name='Main', color='yellow')
 
 
 def get_args() -> argparse.Namespace:
@@ -41,13 +37,12 @@ def get_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-@timeit(custom_print="{func_name} took {duration:2.5f} sec(s) to run!")
 def main():
-    """This is the main function of main.py
+    """ This is the main function of main.py
 
     Example:
         python youbot/main.py -m run_mode_1
-                                                     -c confs/template_conf.yml
+                                                     -c confs/conf.yml
                                                      -l logs/output.log
     """
 
@@ -55,53 +50,17 @@ def main():
     args = get_args()
     ColorizedLogger.setup_logger(log_path=args.log, debug=args.debug, clear_log=True)
     # Load the configuration
-    # configuration = Configuration(config_src=args.config_file,
-    #                               config_schema_path='yml_schema_strict.json')
-    configuration = Configuration(config_src=args.config_file)
-    # Prints
-    basic_logger.info("Starting in run mode: {0}".format(args.run_mode))
-    basic_logger.info("Examples:")
-    fancy_logger.info("You can customize the logger like this")
-    fancy_logger.info("You can customize each log message differently",
-                      color="green", on_color="on_white", attrs=[])
-    basic_logger.info("If you want to print complete blank lines use nl(num_lines=<#>):")
-    basic_logger.nl(num_lines=2)
-    # Example timeit code block
-    basic_logger.info("You can use timeit either as a function Wrapper or a ContextManager:")
-    for i in range(5):
-        custom_print = f"{i}: " + "Iterating in a 10,000-number-range took {duration:2.5f} seconds."
-        skip = i in [1, 2, 3]
-        with timeit(custom_print=custom_print, skip=skip):
-            for _ in range(10000):
-                pass
-    # Example profileit code block
-    basic_logger.info(
-        "Lastly, you can use profileit either as a function Wrapper or a ContextManager:")
-    with profileit():
-        # CloudStore
-        cloud_conf = configuration.get_config('cloudstore')[0]
-        if cloud_conf['type'] == 'dropbox' and cloud_conf['config']['api_key'] != 'DROPBOX_API_KEY':
-            dropbox_obj = DropboxCloudstore(config=cloud_conf['config'])
-            basic_logger.info(f"Base folder contents in dropbox:\n{dropbox_obj.ls().keys()}")
-        # MySqlDatastore
-        cloud_conf = configuration.get_config('datastore')[0]
-        if cloud_conf['type'] == 'mysql' and cloud_conf['config']['username'] != 'MYSQL_USERNAME':
-            mysql_obj = MySqlDatastore(config=cloud_conf['config'])
-            basic_logger.info(f"List of tables in DB:\n{mysql_obj.show_tables()}")
-        # GmailEmailer
-        cloud_conf = configuration.get_config('emailer')[0]
-        if cloud_conf['type'] == 'gmail' and cloud_conf['config']['api_key'] != 'GMAIL_API_KEY':
-            basic_logger.info(f"Sending Sample Email to the email address set..")
-            gmail_obj = GmailEmailer(config=cloud_conf['config'])
-            gmail_obj.send_email(subject='starter',
-                                 to=[gmail_obj.email_address],
-                                 text='GmailEmailer works!')
-            basic_logger.info(f"Done!")
+    conf_obj = Configuration(config_src=args.config_file)
+    you_conf = conf_obj.get_config('youtube')[0]
+    # Setup Youtube API
+    youmanager = YoutubeManagerV3(config=you_conf['config'], channel_name=you_conf['channel'])
+    logger.info(youmanager.channel_name)
+    logger.info(youmanager._api)
 
 
 if __name__ == '__main__':
     try:
         main()
     except Exception as e:
-        basic_logger.error(str(e) + '\n' + str(traceback.format_exc()))
+        logger.error(str(e) + '\n' + str(traceback.format_exc()))
         raise e
