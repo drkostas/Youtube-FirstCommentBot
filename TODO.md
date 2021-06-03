@@ -5,3 +5,4 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [ ] Create child mysql class
 - [ ] Customize configurations
 - [ ] Rebuild the main
+- [ ] Get channel name automatically
