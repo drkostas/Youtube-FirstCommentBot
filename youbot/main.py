@@ -41,9 +41,7 @@ def main():
     """ This is the main function of main.py
 
     Example:
-        python youbot/main.py -m run_mode_1
-                                                     -c confs/conf.yml
-                                                     -l logs/output.log
+        python youbot/main.py -m run_mode_1 -c confs/conf.yml -l logs/output.log
     """
 
     # Initializing
@@ -53,9 +51,10 @@ def main():
     conf_obj = Configuration(config_src=args.config_file)
     you_conf = conf_obj.get_config('youtube')[0]
     # Setup Youtube API
-    youmanager = YoutubeManagerV3(config=you_conf['config'], channel_name=you_conf['channel'])
-    logger.info(youmanager.channel_name)
-    logger.info(youmanager._api)
+    yout_manager = YoutubeManagerV3(config=you_conf['config'],
+                                    channel_name=you_conf['channel'],
+                                    tag=conf_obj.tag)
+    logger.info(yout_manager.channel_name)
 
 
 if __name__ == '__main__':
