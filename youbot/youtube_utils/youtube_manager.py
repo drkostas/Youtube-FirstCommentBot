@@ -1,6 +1,7 @@
 from typing import List, Tuple, Dict, Union
 from abc import ABC, abstractmethod
 import os
+import re
 import math
 from datetime import datetime, timedelta, timezone
 import dateutil.parser
@@ -20,26 +21,30 @@ class AbstractYoutubeManager(ABC):
     __slots__ = ('channel_name', '_api', 'tag')
 
     @abstractmethod
-    def __init__(self, config: Dict, channel_name: str, tag: str) -> None:
+    def __init__(self, config: Dict, tag: str) -> None:
         """
         The basic constructor. Creates a new instance of YoutubeManager using the specified credentials
 
         :param config:
         """
 
-        self.channel_name = channel_name
         self.tag = tag
         self._api = self._build_api(**config, tag=self.tag)
+        self.channel_name = self._get_my_username()
 
     @staticmethod
     @abstractmethod
     def _build_api(*args, **kwargs):
         pass
 
+    @abstractmethod
+    def _get_my_username(self) -> str:
+        pass
+
 
 class YoutubeManagerV3(AbstractYoutubeManager):
-    def __init__(self, config: Dict, channel_name: str, tag: str):
-        super().__init__(config, channel_name, tag)
+    def __init__(self, config: Dict, tag: str):
+        super().__init__(config, tag)
 
     @staticmethod
     def _build_api(client_id: str, client_secret: str, api_version: str, read_only_scope: str,
@@ -69,27 +74,25 @@ class YoutubeManagerV3(AbstractYoutubeManager):
         api = build('youtube', api_version, http=credentials.authorize(httplib2.Http()))
         return api
 
-    @staticmethod
-    def _channel_from_response(response: Dict) -> Union[Dict, None]:
-        """
-        Transforms a YouTube API response into a channel Dict.
+    def _get_my_username(self) -> str:
+        channels_response = self._api.channels().list(
+            part="snippet",
+            fields='items(id,snippet(title))',
+            mine='true'
+        ).execute()
+        if channels_response:
+            my_username = self._channel_from_response(channels_response)['username']
+        else:
+            error_msg = "Got empty response when trying to get the self username."
+            logger.error("Got empty response when trying to get the self username.")
+            raise Exception(error_msg)
+        return my_username
 
-        Args:
-            response:
-        """
-
-        for channel in response['items']:
-            result = dict()
-            result['id'] = channel['id']
-            result['username'] = channel['snippet']['title']
-            result['title'] = None
-            result['added_on'] = datetime.utcnow().isoformat()
-            result['last_commented'] = (datetime.utcnow() - timedelta(days=1)).isoformat()
-            return result
-        return None
+    def comment(self, video_id: str, comment_text: str) -> None:
+        raise NotImplementedError()
 
     def get_channel_info_by_username(self, username: str) -> Union[Dict, None]:
-        """Queries YouTube for a channel using the specified username
+        """ Queries YouTube for a channel using the specified username.
 
         Args:
             username (str): The username to search for
@@ -151,6 +154,90 @@ class YoutubeManagerV3(AbstractYoutubeManager):
                 upload['channel_id'] = channel['id']
                 yield upload
 
+    def get_video_comments(self, url: str, search_terms: str = None) -> List:
+        """ Populates a list with comments (and their replies).
+
+        Args:
+            url:
+            search_terms:
+        """
+
+        if not search_terms:
+            search_terms = self.channel_name
+        video_id = re.search(r"^.*(youtu\.be\/|vi?\/|u\/\w\/|embed\/|\?vi?=|\&vi?=)([^#\&\?]*).*",
+                             url).group(2)
+        page_token = ""  # "&pageToken={}".format(page_token)
+        comment_threads_response = self._api.commentThreads().list(
+            part="snippet",
+            maxResults=100,
+            videoId="{}{}".format(video_id, page_token),
+            searchTerms=search_terms
+        ).execute()
+
+        comments = []
+        for comment_thread in comment_threads_response['items']:
+            channel_name = comment_thread['snippet']['topLevelComment']['snippet']['authorDisplayName']
+            if channel_name == self.channel_name:
+                current_comment = {"url": url, "video_id": video_id, "comment_id": comment_thread['id'],
+                                   "like_count":
+                                       comment_thread['snippet']['topLevelComment']['snippet'][
+                                           'likeCount'],
+                                   "reply_count": comment_thread['snippet']['totalReplyCount']}
+                comments.append(current_comment)
+
+        return comments
+
+    def get_profile_pictures(self, channels: List = None) -> List[Tuple[str, str]]:
+        """ Gets the profile picture urls for a list of channel ids (or for the self channel).
+
+        Args:
+            channels:
+
+        Returns:
+            profile_pictures: [(channel_id, thumbnail_url), ..]
+        """
+
+        if channels is None:
+            profile_pictures_request = self._api.channels().list(
+                mine="true",
+                part="snippet",
+                fields='items(id,snippet(thumbnails(default)))'
+            )
+        else:
+            profile_pictures_request = self._api.channels().list(
+                id=",".join(channels),
+                part="snippet",
+                fields='items(id,snippet(thumbnails(default)))'
+            )
+
+        profile_pictures_response = profile_pictures_request.execute()
+
+        profile_pictures_result = []
+        for profile_picture in profile_pictures_response["items"]:
+            profile_pictures_result.append(
+                (profile_picture["id"], profile_picture["snippet"]["thumbnails"]["default"]["url"]))
+
+        return profile_pictures_result
+
+    @staticmethod
+    def _channel_from_response(response: Dict) -> Union[Dict, None]:
+        """
+        Transforms a YouTube API response into a channel Dict.
+
+        Args:
+            response:
+        """
+
+        for channel in response['items']:
+            result = dict()
+            result['id'] = channel['id']
+            result['username'] = channel['snippet']['title']
+            result['title'] = None
+            result['added_on'] = datetime.utcnow().isoformat()
+            result['last_commented'] = (datetime.utcnow() - timedelta(days=1)).isoformat()
+            return result
+        return None
+
     @staticmethod
     def split_list(input_list: List, chunk_size: int) -> List:
         """
@@ -203,8 +290,8 @@ class YoutubeManagerV3(AbstractYoutubeManager):
                     video['published_at'] = playlist_item["snippet"]["publishedAt"]
                     video['title'] = playlist_item["snippet"]["title"]
                     yield video
-                # else:
-                #     return
+                else:
+                    return
 
             playlist_items_request = self._api.playlistItems().list_next(
                 playlist_items_request, playlist_items_response

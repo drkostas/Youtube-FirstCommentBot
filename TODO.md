@@ -1,8 +1,8 @@
 # TODO
 See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [X] Load starter
-- [ ] Build a Youtube class
+- [X] Get channel name automatically
+- [ ] Build Youtube Manager class
 - [ ] Create child mysql class
-- [ ] Customize configurations
-- [ ] Rebuild the main
-- [ ] Get channel name automatically
+- [ ] Create the workflow for the commenter
+- [ ] Create the workflow for the accumulator
