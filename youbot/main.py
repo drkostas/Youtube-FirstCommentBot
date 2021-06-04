@@ -54,8 +54,14 @@ def main():
     yout_manager = YoutubeManagerV3(config=you_conf['config'],
                                     channel_name=you_conf['channel'],
                                     tag=conf_obj.tag)
-    logger.info(yout_manager.channel_name)
 
+    # Test the video retrieval for 3 channels
+    pewd_info = yout_manager.get_channel_info_by_username('Pewdiepie')
+    v_info = yout_manager.get_channel_info_by_username('Veritasium')
+    ku_info = yout_manager.get_channel_info_by_username('Kurzgesagt')
+    channel_ids = [pewd_info['id'], v_info['id'], ku_info['id']]
+    for video in yout_manager.get_uploads(channels=channel_ids):
+        logger.info(video)
 
 if __name__ == '__main__':
     try:
