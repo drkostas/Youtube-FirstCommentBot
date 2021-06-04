@@ -1,4 +1,4 @@
-tag: dev
+tag: commenter
 cloudstore:
   - config:
       api_key: !ENV ${DROPBOX_API_KEY}
@@ -18,8 +18,8 @@ emailer:
     type: gmail
 youtube:
   - config:
-      client_id: test
-      client_secret: test2
+      client_id: !ENV ${CLIENT_ID}
+      client_secret: !ENV ${CLIENT_SECRET}
       api_version: v3
       read_only_scope: https://www.googleapis.com/auth/youtube.force-ssl
     channel: mychannel_name
