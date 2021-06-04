@@ -22,4 +22,4 @@ youtube:
       client_secret: !ENV ${CLIENT_SECRET}
       api_version: v3
       read_only_scope: https://www.googleapis.com/auth/youtube.force-ssl
-    channel: mychannel_name
+    type: normal
