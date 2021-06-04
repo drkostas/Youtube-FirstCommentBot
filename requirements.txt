@@ -1,12 +1,13 @@
 dropbox~=11.10.0
 gmail~=0.6.3
-google-api-python-client==2.7.0
-google-auth-oauthlib==0.4.4
+google-api-python-client~=2.7.0
+google-auth-oauthlib~=0.4.4
 jsonschema~=3.2.0
-httplib2==0.19.1
+httplib2~=0.19.1
 mysql-connector-python~=8.0.19
 mysql-connector~=2.2.9
-oauth2client==4.1.3
+oauth2client~=4.1.3
+python-dateutil~=2.8.1
 PyYAML~=5.4.1
 requests~=2.25.1
 setuptools~=52.0.0
