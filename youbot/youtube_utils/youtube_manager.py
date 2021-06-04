@@ -70,7 +70,7 @@ class YoutubeManagerV3(AbstractYoutubeManager):
         return api
 
     @staticmethod
-    def channel_from_response(response: Dict) -> Union[Dict, None]:
+    def _channel_from_response(response: Dict) -> Union[Dict, None]:
         """
         Transforms a YouTube API response into a channel Dict.
 
@@ -101,7 +101,7 @@ class YoutubeManagerV3(AbstractYoutubeManager):
             fields='items(id,snippet(title))'
         ).execute()
         if channels_response:
-            channel = self.channel_from_response(channels_response)
+            channel = self._channel_from_response(channels_response)
             if channel is not None:
                 channel['username'] = username
         else:
@@ -122,13 +122,14 @@ class YoutubeManagerV3(AbstractYoutubeManager):
             fields='items(id,snippet(title))'
         ).execute()
 
-        return self.channel_from_response(channels_response)
+        return self._channel_from_response(channels_response)
 
-    def get_uploads(self, channels: List) -> Dict:
+    def get_uploads(self, channels: List, last_n_hours: int = 2) -> Dict:
         """ Retrieves new uploads for the specified channels.
 
         Args:
             channels(list): A list with channel IDs
+            last_n_hours:
         """
 
         # Separate the channels list in 50-sized channel lists
@@ -145,7 +146,7 @@ class YoutubeManagerV3(AbstractYoutubeManager):
         # For each playlist ID, get 50 videos
         for channel in channels_to_check:
             uploads_list_id = channel["contentDetails"]["relatedPlaylists"]["uploads"]
-            for upload in self.get_uploads_playlist(uploads_list_id):
+            for upload in self._get_uploads_playlist(uploads_list_id, last_n_hours):
                 upload['channel_title'] = channel['snippet']['title']
                 upload['channel_id'] = channel['id']
                 yield upload
@@ -174,7 +175,7 @@ class YoutubeManagerV3(AbstractYoutubeManager):
 
         return output_list
 
-    def get_uploads_playlist(self, uploads_list_id: str) -> Dict:
+    def _get_uploads_playlist(self, uploads_list_id: str, last_n_hours: int = 2) -> Dict:
         """ Retrieves uploads using the specified playlist ID which were have been added
         since the last check.
 
@@ -195,13 +196,16 @@ class YoutubeManagerV3(AbstractYoutubeManager):
             for playlist_item in playlist_items_response["items"]:
                 published_at = dateutil.parser.parse(playlist_item['snippet']['publishedAt'])
                 video = dict()
-                # Return the video only if it was published in the last 2 hours
-                if published_at >= (datetime.utcnow() - timedelta(hours=2)).replace(
+                # Return the video only if it was published in the last `last_n_hours` hours
+                if published_at >= (datetime.utcnow() - timedelta(hours=last_n_hours)).replace(
                         tzinfo=timezone.utc):
                     video['id'] = playlist_item["snippet"]["resourceId"]["videoId"]
                     video['published_at'] = playlist_item["snippet"]["publishedAt"]
                     video['title'] = playlist_item["snippet"]["title"]
                     yield video
+                # else:
+                #     return
+
             playlist_items_request = self._api.playlistItems().list_next(
                 playlist_items_request, playlist_items_response
             )

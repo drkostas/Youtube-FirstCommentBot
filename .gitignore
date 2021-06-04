@@ -135,7 +135,7 @@ dmypy.json
 /.idea
 
 # Tmp files
-*tmp.*
+*tmp*.*
 
 # Tars
 *.gz

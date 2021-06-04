@@ -8,7 +8,7 @@ logger = ColorizedLogger(logger_name='Main', color='yellow')
 
 
 def get_args() -> argparse.Namespace:
-    """Setup the argument parser
+    """ Setup the argument parser.
 
     Returns:
         argparse.Namespace:
@@ -60,8 +60,9 @@ def main():
     v_info = yout_manager.get_channel_info_by_username('Veritasium')
     ku_info = yout_manager.get_channel_info_by_username('Kurzgesagt')
     channel_ids = [pewd_info['id'], v_info['id'], ku_info['id']]
-    for video in yout_manager.get_uploads(channels=channel_ids):
+    for video in yout_manager.get_uploads(channels=channel_ids, last_n_hours=12000):
         logger.info(video)
+
 
 if __name__ == '__main__':
     try:
