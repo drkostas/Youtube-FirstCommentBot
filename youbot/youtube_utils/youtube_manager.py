@@ -1,4 +1,4 @@
-from typing import List, Tuple, Dict, Union
+from typing import List, Tuple, Dict, Union, Any
 from abc import ABC, abstractmethod
 import os
 import re
@@ -18,7 +18,7 @@ logger = ColorizedLogger('YoutubeManager')
 
 
 class AbstractYoutubeManager(ABC):
-    __slots__ = ('channel_name', '_api', 'tag')
+    __slots__ = ('channel_name', 'channel_id', '_api', 'tag')
 
     @abstractmethod
     def __init__(self, config: Dict, tag: str) -> None:
@@ -30,7 +30,7 @@ class AbstractYoutubeManager(ABC):
 
         self.tag = tag
         self._api = self._build_api(**config, tag=self.tag)
-        self.channel_name = self._get_my_username()
+        self.channel_name, self.channel_id = self._get_my_username_and_id()
 
     @staticmethod
     @abstractmethod
@@ -38,7 +38,7 @@ class AbstractYoutubeManager(ABC):
         pass
 
     @abstractmethod
-    def _get_my_username(self) -> str:
+    def _get_my_username_and_id(self) -> str:
         pass
 
 
@@ -74,22 +74,32 @@ class YoutubeManagerV3(AbstractYoutubeManager):
         api = build('youtube', api_version, http=credentials.authorize(httplib2.Http()))
         return api
 
-    def _get_my_username(self) -> str:
+    def _get_my_username_and_id(self) -> Tuple[str, str]:
         channels_response = self._api.channels().list(
             part="snippet",
             fields='items(id,snippet(title))',
             mine='true'
         ).execute()
         if channels_response:
-            my_username = self._channel_from_response(channels_response)['username']
+            channel_info = self._channel_from_response(channels_response)
+            my_username = channel_info['username']
+            my_id = channel_info['id']
         else:
             error_msg = "Got empty response when trying to get the self username."
-            logger.error("Got empty response when trying to get the self username.")
+            logger.error(error_msg)
             raise Exception(error_msg)
-        return my_username
+        return my_username, my_id
 
     def comment(self, video_id: str, comment_text: str) -> None:
-        raise NotImplementedError()
+
+        try:
+            properties = {'snippet.channelId': self.channel_id,
+                          'snippet.videoId': video_id,
+                          'snippet.topLevelComment.snippet.textOriginal': comment_text}
+            self._comment_threads_insert(properties=properties,
+                                         part='snippet')
+        except Exception as exc:
+            logger.error(f"An error occurred:\n{exc}")
 
     def get_channel_info_by_username(self, username: str) -> Union[Dict, None]:
         """ Queries YouTube for a channel using the specified username.
@@ -178,7 +188,8 @@ class YoutubeManagerV3(AbstractYoutubeManager):
         for comment_thread in comment_threads_response['items']:
             channel_name = comment_thread['snippet']['topLevelComment']['snippet']['authorDisplayName']
             if channel_name == self.channel_name:
-                current_comment = {"url": url, "video_id": video_id, "comment_id": comment_thread['id'],
+                current_comment = {"url": url, "video_id": video_id,
+                                   "comment_id": comment_thread['id'],
                                    "like_count":
                                        comment_thread['snippet']['topLevelComment']['snippet'][
                                            'likeCount'],
@@ -296,3 +307,66 @@ class YoutubeManagerV3(AbstractYoutubeManager):
             playlist_items_request = self._api.playlistItems().list_next(
                 playlist_items_request, playlist_items_response
             )
+
+    def _comment_threads_insert(self, properties: Dict, **kwargs: Any) -> Dict:
+        """ Comment using the Youtube API.
+        Args:
+            properties:
+            **kwargs:
+        """
+
+        resource = self._build_resource(properties)
+        kwargs = self._remove_empty_kwargs(**kwargs)
+        response = self._api.commentThreads().insert(body=resource, **kwargs).execute()
+        return response
+
+    @staticmethod
+    def _build_resource(properties: Dict) -> Dict:
+        """ Build a resource based on a list of properties given as key-value pairs.
+            Leave properties with empty values out of the inserted resource. """
+
+        resource = {}
+        for p in properties:
+            # Given a key like "snippet.title", split into "snippet" and "title", where
+            # "snippet" will be an object and "title" will be a property in that object.
+            prop_array = p.split('.')
+            ref = resource
+            for pa in range(0, len(prop_array)):
+                is_array = False
+                key = prop_array[pa]
+                # For properties that have array values, convert a name like
+                # "snippet.tags[]" to snippet.tags, and set a flag to handle
+                # the value as an array.
+                if key[-2:] == '[]':
+                    key = key[0:len(key) - 2:]
+                    is_array = True
+                if pa == (len(prop_array) - 1):
+                    # Leave properties without values out of inserted resource.
+                    if properties[p]:
+                        if is_array:
+                            ref[key] = properties[p].split(',')
+                        else:
+                            ref[key] = properties[p]
+                elif key not in ref:
+                    # For example, the property is "snippet.title", but the resource does
+                    # not yet have a "snippet" object. Create the snippet object here.
+                    # Setting "ref = ref[key]" means that in the next time through the
+                    # "for pa in range ..." loop, we will be setting a property in the
+                    # resource's "snippet" object.
+                    ref[key] = {}
+                    ref = ref[key]
+                else:
+                    # For example, the property is "snippet.description", and the resource
+                    # already has a "snippet" object.
+                    ref = ref[key]
+        return resource
+
+    @staticmethod
+    def _remove_empty_kwargs(**kwargs: Any) -> Dict:
+        """ Remove keyword arguments that are not set. """
+        good_kwargs = {}
+        if kwargs is not None:
+            for key, value in kwargs.items():
+                if value:
+                    good_kwargs[key] = value
+        return good_kwargs
