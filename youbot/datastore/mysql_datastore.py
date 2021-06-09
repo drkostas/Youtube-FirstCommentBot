@@ -103,7 +103,8 @@ class MySqlDatastore(AbstractDatastore):
         """
 
         data_str = ", ".join(
-            list(map(lambda key, val: "{key}='{val}'".format(key=str(key), val=str(val)), data.keys(), data.values())))
+            list(map(lambda key, val: "{key}='{val}'".format(key=str(key), val=str(val)), data.keys(),
+                     data.values())))
 
         query = "INSERT INTO {table} SET {data}".format(table=table, data=data_str)
         logger.debug("Executing: %s" % query)
@@ -122,15 +123,18 @@ class MySqlDatastore(AbstractDatastore):
         """
 
         set_data_str = ", ".join(
-            list(map(lambda key, val: "{key}='{val}'".format(key=str(key), val=str(val)), set_data.keys(),
+            list(map(lambda key, val: "{key}='{val}'".format(key=str(key), val=str(val)),
+                     set_data.keys(),
                      set_data.values())))
 
-        query = "UPDATE {table} SET {data} WHERE {where}".format(table=table, data=set_data_str, where=where)
+        query = "UPDATE {table} SET {data} WHERE {where}".format(table=table, data=set_data_str,
+                                                                 where=where)
         logger.debug("Executing: %s" % query)
         self._cursor.execute(query)
         self._connection.commit()
 
-    def select_from_table(self, table: str, columns: str = '*', where: str = 'TRUE', order_by: str = 'NULL',
+    def select_from_table(self, table: str, columns: str = '*', where: str = 'TRUE',
+                          order_by: str = 'NULL',
                           asc_or_desc: str = 'ASC', limit: int = 1000) -> List:
         """
         Selects from a specified table based on the given columns, where, ordering and limit
@@ -146,7 +150,8 @@ class MySqlDatastore(AbstractDatastore):
         """
 
         query = "SELECT {columns} FROM  {table} WHERE {where} ORDER BY {order_by} {asc_or_desc} LIMIT {limit}".format(
-            columns=columns, table=table, where=where, order_by=order_by, asc_or_desc=asc_or_desc, limit=limit)
+            columns=columns, table=table, where=where, order_by=order_by, asc_or_desc=asc_or_desc,
+            limit=limit)
         logger.debug("Executing: %s" % query)
         self._cursor.execute(query)
         results = self._cursor.fetchall()
@@ -190,3 +195,45 @@ class MySqlDatastore(AbstractDatastore):
 
         self._connection.commit()
         self._cursor.close()
+
+
+class YoutubeMySqlDatastore(MySqlDatastore):
+
+    def __init__(self, config: Dict) -> None:
+        """
+        The basic constructor. Creates a new instance of Datastore using the specified credentials
+
+        :param config:
+        """
+
+        super().__init__(config)
+
+    def create_empty_tables(self):
+        channels_schema = \
+            """id             varchar(100) default ''   not null,
+            username       varchar(100)              not null,
+            added_on       varchar(100)              not null,
+            last_commented varchar(100)              not null,
+            priority       int auto_increment,
+            channel_photo  varchar(100) default '-1' null,
+            constraint id_pk PRIMARY KEY (id),
+            constraint id unique (id),
+            constraint priority unique (priority),
+            constraint username unique (username)"""
+        comments_schema = \
+            """
+            id           varchar(100)              not null,
+            link         varchar(100)              not null,
+            comment      varchar(255)              not null,
+            timestamp    varchar(100)              not null,
+            like_count   int          default -1   null,
+            reply_count  int          default -1   null,
+            comment_id   varchar(100) default '-1' null,
+            video_id     varchar(100) default '-1' null,
+            comment_link varchar(100) default '-1' null,
+            constraint link_pk PRIMARY KEY (link),
+            constraint link     unique (link),
+            constraint channel_id foreign key (id) references channels (id) on update cascade on delete cascade"""
+
+        self.create_table(table='channels', schema=channels_schema)
+        self.create_table(table='comments', schema=comments_schema)
