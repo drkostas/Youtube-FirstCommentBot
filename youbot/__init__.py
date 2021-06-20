@@ -3,7 +3,7 @@
 from youbot.fancy_logger import ColorizedLogger
 from youbot.configuration import Configuration, validate_json_schema
 from youbot.cloudstore import DropboxCloudstore
-from youbot.datastore import MySqlDatastore
+from youbot.datastore import YoutubeMySqlDatastore
 from youbot.emailer import GmailEmailer
 from youbot.youtube_utils import YoutubeManagerV3
 
