@@ -50,6 +50,30 @@ class MySqlDatastore(AbstractDatastore):
         cursor = connection.cursor()
         return connection, cursor
 
+    def execute_query(self, query: str, commit: bool = False,
+                      fetchall: bool = False, fetchone: bool = False) -> List[Tuple]:
+        """
+        Execute a query in the DB.
+        Args:
+            query:
+            commit:
+            fetchall:
+            fetchone:
+        """
+
+        logger.debug("Executing: %s" % query)
+        try:
+            self._cursor.execute(query)
+            if commit:
+                self.commit()
+            if fetchall:
+                return self._cursor.fetchall()
+            if fetchone:
+                return self._cursor.fetchone()
+        except mysql.connector.errors.ProgrammingError as e:
+            logger.error(f'MySQL Error: {e}')
+            logger.error(f'Full Query: {query}')
+
     def create_table(self, table: str, schema: str) -> None:
         """
         Creates a table using the specified schema
@@ -61,9 +85,7 @@ class MySqlDatastore(AbstractDatastore):
         """
 
         query = "CREATE TABLE IF NOT EXISTS {table} ({schema})".format(table=table, schema=schema)
-        logger.debug("Executing: %s" % query)
-        self._cursor.execute(query)
-        self._connection.commit()
+        self.execute_query(query, commit=True)
 
     def drop_table(self, table: str) -> None:
         """
@@ -75,9 +97,7 @@ class MySqlDatastore(AbstractDatastore):
         """
 
         query = "DROP TABLE IF EXISTS {table}".format(table=table)
-        logger.debug("Executing: %s" % query)
-        self._cursor.execute(query)
-        self._connection.commit()
+        self.execute_query(query, commit=True)
 
     def truncate_table(self, table: str) -> None:
         """
@@ -89,9 +109,7 @@ class MySqlDatastore(AbstractDatastore):
         """
 
         query = "TRUNCATE TABLE {table}".format(table=table)
-        logger.debug("Executing: %s" % query)
-        self._cursor.execute(query)
-        self._connection.commit()
+        self.execute_query(query, commit=True)
 
     def insert_into_table(self, table: str, data: dict) -> None:
         """
@@ -108,9 +126,7 @@ class MySqlDatastore(AbstractDatastore):
                      data.values())))
 
         query = "INSERT INTO {table} SET {data}".format(table=table, data=data_str)
-        logger.debug("Executing: %s" % query)
-        self._cursor.execute(query)
-        self._connection.commit()
+        self.execute_query(query, commit=True)
 
     def update_table(self, table: str, set_data: dict, where: str) -> None:
         """
@@ -130,32 +146,98 @@ class MySqlDatastore(AbstractDatastore):
 
         query = "UPDATE {table} SET {data} WHERE {where}".format(table=table, data=set_data_str,
                                                                  where=where)
-        logger.debug("Executing: %s" % query)
-        self._cursor.execute(query)
-        self._connection.commit()
+        self.execute_query(query, commit=True)
 
     def select_from_table(self, table: str, columns: str = '*', where: str = 'TRUE',
-                          order_by: str = 'NULL',
-                          asc_or_desc: str = 'ASC', limit: int = 1000) -> List:
+                          order_by: str = 'NULL', asc_or_desc: str = 'ASC', limit: int = 1000,
+                          group_by: str = '', having: str = '') -> List[Tuple]:
         """
         Selects from a specified table based on the given columns, where, ordering and limit
 
-        :param self:
-        :param table:
-        :param columns:
-        :param where:
-        :param order_by:
-        :param asc_or_desc:
-        :param limit:
-        :return results:
+        Args:
+            table:
+            columns:
+            where:
+            order_by:
+            asc_or_desc:
+            limit:
+            group_by:
+            having:
         """
 
-        query = "SELECT {columns} FROM  {table} WHERE {where} ORDER BY {order_by} {asc_or_desc} LIMIT {limit}".format(
-            columns=columns, table=table, where=where, order_by=order_by, asc_or_desc=asc_or_desc,
-            limit=limit)
-        logger.debug("Executing: %s" % query)
-        self._cursor.execute(query)
-        results = self._cursor.fetchall()
+        # Construct Group By
+        if group_by:
+            if having:
+                having = f'HAVING {having}'
+            group_by = f'GROUP BY {group_by} {having} '
+
+        # Build the Query
+        query = f"SELECT {columns} " \
+                f"FROM {table} " \
+                f"WHERE {where} " \
+                f"{group_by}" \
+                f"ORDER BY {order_by} {asc_or_desc} " \
+                f"LIMIT {limit}"
+
+        results = self.execute_query(query, fetchall=True)
+
+        return results
+
+    def select_join(self, left_table: str, right_table: str,
+                    join_key_left: str, join_key_right: str,
+                    left_columns: str = '', right_columns: str = '', custom_columns: str = '',
+                    join_type: str = 'INNER',
+                    where: str = 'TRUE', order_by: str = 'NULL', asc_or_desc: str = 'ASC',
+                    limit: int = 1000, group_by: str = '', having: str = '') -> List[Tuple]:
+        """
+        Join two tables and select.
+
+        Args:
+            left_table:
+            right_table:
+            left_columns:
+            right_columns:
+            custom_columns: Custom columns for which no `l.` or `r.` will be added automatically
+            join_key_left: The column of join of the left table
+            join_key_right: The column of join of the right table
+            join_type: OneOf(INNER, LEFT, RIGHT)
+            where: Add a `l.` or `.r` before the specified columns
+            order_by: Add a `l.` or `.r` before the specified columns
+            asc_or_desc:
+            limit:
+            group_by: Add a `l.` or `.r` before the specified columns
+            having: Add a `l.` or `.r` before the specified columns
+        """
+
+        # Construct Group By
+        if group_by:
+            if having:
+                having = f'HAVING {having}'
+            group_by = f'GROUP BY {group_by} {having} '
+
+        # Construct Columns
+        if left_columns:
+            left_columns = 'l.' + ', l.'.join(map(str.strip, left_columns.split(',')))
+            if right_columns or custom_columns:
+                left_columns += ', '
+        if right_columns:
+            right_columns = 'r.' + ', r.'.join(map(str.strip, right_columns.split(',')))
+            if custom_columns:
+                right_columns += ', '
+        columns = f'{left_columns} {right_columns} {custom_columns}'
+
+        # Build the Query
+        query = f"SELECT {columns} " \
+                f"FROM {left_table} l " \
+                f"{join_type} JOIN {right_table} r " \
+                f"ON l.{join_key_left}=r.{join_key_right} " \
+                f"WHERE {where} " \
+                f"{group_by}" \
+                f"ORDER BY {order_by} {asc_or_desc} " \
+                f"LIMIT {limit}"
+
+        print(query)
+        results = self.execute_query(query, fetchall=True)
 
         return results
 
@@ -170,9 +252,7 @@ class MySqlDatastore(AbstractDatastore):
         """
 
         query = "DELETE FROM {table} WHERE {where}".format(table=table, where=where)
-        logger.debug("Executing: %s" % query)
-        self._cursor.execute(query)
-        self._connection.commit()
+        self.execute_query(query, commit=True)
 
     def show_tables(self) -> List:
         """
@@ -181,21 +261,24 @@ class MySqlDatastore(AbstractDatastore):
         """
 
         query = 'SHOW TABLES'
-        logger.debug("Executing: %s" % query)
-        self._cursor.execute(query)
-        results = self._cursor.fetchall()
+        results = self.execute_query(query, fetchall=True)
 
         return [result[0] for result in results]
 
-    def __exit__(self) -> None:
+    def commit(self) -> None:
+        self._connection.commit()
+
+    def close_connection(self) -> None:
         """
         Flushes and closes the connection
 
         :return:
         """
 
-        self._connection.commit()
+        self.commit()
         self._cursor.close()
+
+    __exit__ = close_connection
 
 
 class YoutubeMySqlDatastore(MySqlDatastore):
@@ -237,7 +320,7 @@ class YoutubeMySqlDatastore(MySqlDatastore):
             video_id     varchar(100) default '-1' null,
             comment_link varchar(100) default '-1' null,
             constraint video_link_pk PRIMARY KEY (video_link),
-            constraint comment_link     unique (comment_link),
+            constraint video_link     unique (video_link),
             constraint channel_id foreign key (channel_id) references channels (channel_id) on update cascade on delete cascade"""
 
         self.create_table(table=self.CHANNEL_TABLE, schema=channels_schema)
@@ -290,7 +373,7 @@ class YoutubeMySqlDatastore(MySqlDatastore):
 
         return result[0]
 
-    def remove_channel_from_id(self, ch_id: str) -> None:
+    def remove_channel_by_id(self, ch_id: str) -> None:
         """Retrieve a channel from the database by its ID
 
         Args:
@@ -309,6 +392,19 @@ class YoutubeMySqlDatastore(MySqlDatastore):
 
         where_statement = f"username='{ch_username}'"
         self.delete_from_table(table=self.CHANNEL_TABLE, where=where_statement)
+
+    def update_channel_photo(self, channel_id: str, photo_url: str) -> None:
+        """
+        Update the profile picture link of a channel.
+        Args:
+            channel_id:
+            photo_url:
+        """
+
+        set_data = {'channel_photo': photo_url}
+        self.update_table(table=self.CHANNEL_TABLE,
+                          set_data=set_data,
+                          where=f"channel_id='{channel_id}'")
 
     def add_comment(self, ch_id: str, video_link: str, comment_text: str) -> None:
         """ TODO: check the case where a comment contains single quotes
@@ -334,4 +430,56 @@ class YoutubeMySqlDatastore(MySqlDatastore):
             self.update_table(table=self.CHANNEL_TABLE, set_data=update_data, where=where_statement)
         except mysql.connector.errors.IntegrityError as e:
             logger.error(f"MySQL Error: {e}")
+
+    def get_comments(self, n_recent: int, min_likes: int = -1,
+                     min_replies: int = -1) -> List[Tuple]:
+        """
+        Get the latest n_recent comments from the comments table.
+        Args:
+            n_recent:
+            min_likes:
+            min_replies:
+        """
+
+        comment_cols = 'video_link, comment, comment_time, like_count, reply_count, comment_link'
+        channel_cols = 'username, channel_photo'
+        where = f'l.like_count>={min_likes} AND l.reply_count>={min_replies} '
+        for comment in self.select_join(left_table=self.COMMENTS_TABLE,
+                                        right_table=self.CHANNEL_TABLE,
+                                        left_columns=comment_cols,
+                                        right_columns=channel_cols,
+                                        custom_columns='COUNT(comment) as cnt',
+                                        join_key_left='channel_id',
+                                        join_key_right='channel_id',
+                                        where=where,
+                                        order_by='l.comment_time',
+                                        asc_or_desc='desc',
+                                        limit=n_recent):
+            yield comment
+
+    def update_comment(self, video_link: str, comment_id: str,
+                       like_cnt: int, reply_cnt: int) -> None:
+        """
+        Populate a comment entry with additional information.
+        Args:
+            video_link:
+            comment_id:
+            like_cnt:
+            reply_cnt:
+        """
+
+        # Get video id
+        video_id = video_link.split('v=')[1].split('&')[0]
+        # Create Comment Link
+        comment_link = f'https://youtube.com/watch?v={video_id}&lc={comment_id}'
+        # Construct the update key-values
+        set_data = {'comment_link': comment_link,
+                    'video_id': video_id,
+                    'comment_id': comment_id,
+                    'like_count': like_cnt,
+                    'reply_count': reply_cnt}
+        # Execute the update command
+        self.update_table(table=self.COMMENTS_TABLE,
+                          set_data=set_data,
+                          where=f"video_link='{video_link}'")
 
