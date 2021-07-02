@@ -1,3 +1,4 @@
+arrow~=1.1.1
 dropbox~=11.10.0
 gmail~=0.6.3
 google-api-python-client~=2.7.0

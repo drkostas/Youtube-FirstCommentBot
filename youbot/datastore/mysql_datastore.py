@@ -330,12 +330,12 @@ class YoutubeMySqlDatastore(MySqlDatastore):
         self.create_table(table=self.CHANNEL_TABLE, schema=channels_schema)
         self.create_table(table=self.COMMENTS_TABLE, schema=comments_schema)
 
-    def get_channels(self) -> List[Tuple]:
+    def get_channels(self) -> List[Dict]:
         """ Retrieve all channels from the database. """
 
-        result = self.select_from_table(table=self.CHANNEL_TABLE)
-
-        return result
+        result = self.select_from_table(table=self.CHANNEL_TABLE, order_by='priority')
+        for row in result:
+            yield self._table_row_to_channel_dict(row)
 
     def add_channel(self, channel_data: Dict) -> None:
         """ Insert the provided channel into the database"""
@@ -435,8 +435,8 @@ class YoutubeMySqlDatastore(MySqlDatastore):
         except mysql.connector.errors.IntegrityError as e:
             logger.error(f"MySQL Error: {e}")
 
-    def get_comments(self, n_recent: int, min_likes: int = -1,
-                     min_replies: int = -1) -> List[Tuple]:
+    def get_comments(self, n_recent: int = 50, min_likes: int = -1,
+                     min_replies: int = -1) -> List[Dict]:
         """
         Get the latest n_recent comments from the comments table.
         Args:
@@ -452,14 +452,13 @@ class YoutubeMySqlDatastore(MySqlDatastore):
                                         right_table=self.CHANNEL_TABLE,
                                         left_columns=comment_cols,
                                         right_columns=channel_cols,
-                                        custom_columns='COUNT(comment) as cnt',
                                         join_key_left='channel_id',
                                         join_key_right='channel_id',
                                         where=where,
                                         order_by='l.comment_time',
                                         asc_or_desc='desc',
                                         limit=n_recent):
-            yield comment
+            yield self._table_row_to_comment_dict(comment)
 
     def update_comment(self, video_link: str, comment_id: str,
                        like_cnt: int, reply_cnt: int) -> None:
@@ -486,4 +485,40 @@ class YoutubeMySqlDatastore(MySqlDatastore):
         self.update_table(table=self.COMMENTS_TABLE,
                           set_data=set_data,
                           where=f"video_link='{video_link}'")
+
+    @staticmethod
+    def _table_row_to_channel_dict(row: Tuple) -> Dict:
+        """Transform a table row into a channel representation
+
+        Args:
+            row (list): The database row
+        """
+
+        channel = dict()
+        channel['channel_id'] = row[0]
+        channel['username'] = row[1]
+        channel['added_on'] = row[2]
+        channel['last_commented'] = row[3]
+        channel['priority'] = row[4]
+        channel['channel_photo'] = row[5]
+        return channel
+
+    @staticmethod
+    def _table_row_to_comment_dict(row: Tuple) -> Dict:
+        """Transform a table row into a channel representation
+
+        Args:
+            row (list): The database row
+        """
+
+        channel = dict()
+        channel['video_link'] = row[0]
+        channel['comment'] = row[1]
+        channel['comment_time'] = row[2]
+        channel['like_count'] = row[3]
+        channel['reply_count'] = row[4]
+        channel['comment_link'] = row[5]
+        channel['username'] = row[6]
+        channel['channel_photo'] = row[7]
+        return channel
 
