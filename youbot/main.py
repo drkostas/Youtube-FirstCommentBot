@@ -36,6 +36,12 @@ def get_args() -> argparse.Namespace:
     optional_args.add_argument('-i', '--id', help="The ID of the YouTube Channel")
     optional_args.add_argument('-u', '--username',
                                help="The Username of the YouTube Channel")
+    optional_args.add_argument('--n-recent', default=50,
+                               help="Number of recent comments to get for `list_comments`")
+    optional_args.add_argument('--min_likes', default=-1,
+                               help="Number of minimum liked for `list_comments`")
+    optional_args.add_argument('--min_replies', default=-1,
+                               help="Number of minimum replies for `list_comments`")
     optional_args.add_argument('-d', '--debug', action='store_true',
                                help='Enables the debug log messages')
     optional_args.add_argument("-h", "--help", action="help", help="Show this help message and exit")
@@ -66,11 +72,12 @@ def remove_channel(youtube: YoutubeManager, args: argparse.Namespace) -> None:
 
 
 def list_channels(youtube: YoutubeManager, args: argparse.Namespace) -> None:
-    raise NotImplementedError()
+    youtube.list_channels()
 
 
 def list_comments(youtube: YoutubeManager, args: argparse.Namespace) -> None:
-    raise NotImplementedError()
+    youtube.list_comments(n_recent=args.n_recent, min_likes=args.min_likes,
+                          min_replies=args.min_replies)
 
 
 def refresh_photos(youtube: YoutubeManager, args: argparse.Namespace) -> None:
