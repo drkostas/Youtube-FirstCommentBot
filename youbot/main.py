@@ -1,8 +1,7 @@
 import traceback
 import argparse
 
-from youbot import Configuration, ColorizedLogger, \
-    DropboxCloudstore, MySqlDatastore, GmailEmailer, YoutubeManagerV3
+from youbot import Configuration, ColorizedLogger, YoutubeManager
 
 logger = ColorizedLogger(logger_name='Main', color='yellow')
 
@@ -13,6 +12,7 @@ def get_args() -> argparse.Namespace:
     Returns:
         argparse.Namespace:
     """
+
     parser = argparse.ArgumentParser(
         description='A template for python projects.',
         add_help=False)
@@ -27,14 +27,54 @@ def get_args() -> argparse.Namespace:
     required_args.add_argument('-l', '--log', required=True, help="Name of the output log file")
     # Optional args
     optional_args = parser.add_argument_group('Optional Arguments')
-    optional_args.add_argument('-m', '--run-mode', choices=['run_mode_1', 'run_mode_2', 'run_mode_3'],
-                               default='run_mode_1',
+    commands = ['commenter', 'accumulator',
+                'add_channel', 'remove_channel', 'list_channels', 'list_comments',
+                'refresh_photos']
+    optional_args.add_argument('-m', '--run-mode', choices=commands,
+                               default=commands[0],
                                help='Description of the run modes')
+    optional_args.add_argument('-i', '--id', help="The ID of the YouTube Channel")
+    optional_args.add_argument('-u', '--username',
+                               help="The Username of the YouTube Channel")
     optional_args.add_argument('-d', '--debug', action='store_true',
                                help='Enables the debug log messages')
     optional_args.add_argument("-h", "--help", action="help", help="Show this help message and exit")
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    # Custom Condition Checking
+    if (args.id is None and args.username is None) and \
+            args.run_mode in ['add_channel', 'remove_channel']:
+        parser.error('You need to pass either --id or --username when selecting '
+                     'the `add_channel` and `remove_channel` actions')
+    return args
+
+
+def commenter(youtube: YoutubeManager, args: argparse.Namespace) -> None:
+    raise NotImplementedError()
+
+
+def accumulator(youtube: YoutubeManager, args: argparse.Namespace) -> None:
+    raise NotImplementedError()
+
+
+def add_channel(youtube: YoutubeManager, args: argparse.Namespace) -> None:
+    youtube.add_channel(channel_id=args.id, username=args.username)
+
+
+def remove_channel(youtube: YoutubeManager, args: argparse.Namespace) -> None:
+    youtube.remove_channel(channel_id=args.id, username=args.username)
+
+
+def list_channels(youtube: YoutubeManager, args: argparse.Namespace) -> None:
+    raise NotImplementedError()
+
+
+def list_comments(youtube: YoutubeManager, args: argparse.Namespace) -> None:
+    raise NotImplementedError()
+
+
+def refresh_photos(youtube: YoutubeManager, args: argparse.Namespace) -> None:
+    raise NotImplementedError()
 
 
 def main():
@@ -47,21 +87,16 @@ def main():
     # Initializing
     args = get_args()
     ColorizedLogger.setup_logger(log_path=args.log, debug=args.debug, clear_log=True)
-    # Load the configuration
+    # Load the configurations
     conf_obj = Configuration(config_src=args.config_file)
     you_conf = conf_obj.get_config('youtube')[0]
+    db_conf = conf_obj.get_config('datastore')[0]
     # Setup Youtube API
-    yout_manager = YoutubeManagerV3(config=you_conf['config'],
-                                    channel_name=you_conf['channel'],
-                                    tag=conf_obj.tag)
-
-    # Test the video retrieval for 3 channels
-    pewd_info = yout_manager.get_channel_info_by_username('Pewdiepie')
-    v_info = yout_manager.get_channel_info_by_username('Veritasium')
-    ku_info = yout_manager.get_channel_info_by_username('Kurzgesagt')
-    channel_ids = [pewd_info['id'], v_info['id'], ku_info['id']]
-    for video in yout_manager.get_uploads(channels=channel_ids, last_n_hours=12000):
-        logger.info(video)
+    youtube = YoutubeManager(config=you_conf['config'], db_conf=db_conf,
+                             tag=conf_obj.tag)
+    # Run in the specified run mode
+    func = globals()[args.run_mode]
+    func(youtube, args)
 
 
 if __name__ == '__main__':

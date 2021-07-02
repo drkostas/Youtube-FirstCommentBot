@@ -1,6 +1,6 @@
 """Youtube Utils sub-package of YoutubeCommentBot."""
 
-from .youtube_manager import YoutubeManagerV3
+from .youtube_manager import YoutubeApiV3, YoutubeManager
 
 __author__ = "drkostas"
 __email__ = "georgiou.kostas94@gmail.com"

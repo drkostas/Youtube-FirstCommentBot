@@ -3,10 +3,10 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [X] Load starter
 - [X] Get channel name automatically
 - [X] Build YouTube Manager class
-- [X] Create child MySQL class  
-- [ ] Integrate YoutubeMysql class into the YoutubeManager class
-- [ ] Roll the comments for each channel
+- [X] Create child MySQL class
+- [X] Integrate YoutubeMysql class into the YoutubeManager class
 - [ ] Create the workflow for the commenter
+- [ ] Roll the comments for each channel
 - [ ] Create the workflow for the accumulator
 - [ ] Add SQL script for creating the tables needed
 - [ ] Recreate the Livestreaming module

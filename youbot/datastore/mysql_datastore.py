@@ -111,21 +111,25 @@ class MySqlDatastore(AbstractDatastore):
         query = "TRUNCATE TABLE {table}".format(table=table)
         self.execute_query(query, commit=True)
 
-    def insert_into_table(self, table: str, data: dict) -> None:
+    def insert_into_table(self, table: str, data: dict, if_not_exists: bool = False) -> None:
         """
         Inserts into the specified table a row based on a column_name: value dictionary
 
         :param self:
         :param table:
         :param data:
+        :param if_not_exists:
         :return:
         """
 
         data_str = ", ".join(
             list(map(lambda key, val: "{key}='{val}'".format(key=str(key), val=str(val)), data.keys(),
                      data.values())))
-
-        query = "INSERT INTO {table} SET {data}".format(table=table, data=data_str)
+        if if_not_exists:
+            ignore = 'IGNORE'
+        else:
+            ignore = ''
+        query = f"INSERT {ignore} INTO {table} SET {data_str}"
         self.execute_query(query, commit=True)
 
     def update_table(self, table: str, set_data: dict, where: str) -> None:
@@ -337,7 +341,7 @@ class YoutubeMySqlDatastore(MySqlDatastore):
         """ Insert the provided channel into the database"""
 
         try:
-            self.insert_into_table(table=self.CHANNEL_TABLE, data=channel_data)
+            self.insert_into_table(table=self.CHANNEL_TABLE, data=channel_data, if_not_exists=True)
         except mysql.connector.errors.IntegrityError as e:
             logger.error(f"MySQL error: {e}")
 
