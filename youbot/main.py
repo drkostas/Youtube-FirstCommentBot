@@ -56,7 +56,7 @@ def get_args() -> argparse.Namespace:
 
 
 def commenter(youtube: YoutubeManager, args: argparse.Namespace) -> None:
-    raise NotImplementedError()
+    youtube.commenter()
 
 
 def accumulator(youtube: YoutubeManager, args: argparse.Namespace) -> None:
@@ -81,7 +81,7 @@ def list_comments(youtube: YoutubeManager, args: argparse.Namespace) -> None:
 
 
 def refresh_photos(youtube: YoutubeManager, args: argparse.Namespace) -> None:
-    raise NotImplementedError()
+    youtube.refresh_photos()
 
 
 def main():
@@ -100,7 +100,7 @@ def main():
     db_conf = conf_obj.get_config('datastore')[0]
     # Setup Youtube API
     youtube = YoutubeManager(config=you_conf['config'], db_conf=db_conf,
-                             tag=conf_obj.tag)
+                             sleep_time=you_conf['sleep_time'], tag=conf_obj.tag)
     # Run in the specified run mode
     func = globals()[args.run_mode]
     func(youtube, args)

@@ -1,10 +1,11 @@
 """Top-level package for YoutubeCommentBot."""
 
-from youbot.fancy_logger import ColorizedLogger
-from youbot.configuration import Configuration, validate_json_schema
-from youbot.cloudstore import DropboxCloudstore
-from youbot.datastore import YoutubeMySqlDatastore
-from youbot.emailer import GmailEmailer
+from termcolor_logger import ColorLogger
+from yaml_config_wrapper import Configuration, validate_json_schema
+from cloud_filemanager import DropboxCloudManager
+from high_sql import HighMySQL
+from pyemail_sender import GmailPyEmailSender
+from .yt_mysql import YoutubeMySqlDatastore
 from youbot.youtube_utils import YoutubeManager, YoutubeApiV3
 
 __author__ = "drkostas"
