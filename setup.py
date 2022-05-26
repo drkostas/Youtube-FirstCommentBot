@@ -34,15 +34,13 @@ with open('requirements.txt') as f:
 with open('README.md') as readme_file:
     readme = readme_file.read()
 
-setup_requirements = []
-test_requirements = []
 
 COMMANDS = [
-    'cli = youbot.cli:app',
     'youbot_main = youbot.main:main'
 ]
 
-data_files = ['youbot/configuration/yml_schema.json']
+data_files = []
+# data_files = ['youbot/configuration/yml_schema.json']
 
 setup(
     author="drkostas",
@@ -63,7 +61,6 @@ setup(
     data_files=[('', data_files)],
     description="A bot that takes a list of youtube channels and posts the first comment in every new video.",
     entry_points={'console_scripts': COMMANDS},
-    install_requires=requirements,
     license="MIT license",
     long_description=readme,
     include_package_data=True,
@@ -73,9 +70,7 @@ setup(
     packages=find_packages(include=['youbot',
                                     'youbot.*']),
     # py_modules=['main'],
-    setup_requires=setup_requirements,
     test_suite='tests',
-    tests_require=test_requirements,
     url='https://github.com/drkostas/Youtube-FirstCommentBot',
     version='2.0',
     zip_safe=False,

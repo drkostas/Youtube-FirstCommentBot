@@ -23,3 +23,9 @@ youtube:
       api_version: v3
       read_only_scope: https://www.googleapis.com/auth/youtube.force-ssl
     type: normal
+    sleep_time: 60
+comment:
+  - config:
+      comments_list:
+        path: ../comments/sample_comments.txt
+        type: local  # local, dropbox, or mysql
