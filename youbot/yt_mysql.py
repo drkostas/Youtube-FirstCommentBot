@@ -54,7 +54,7 @@ class YoutubeMySqlDatastore(HighMySQL):
 
         result = self.select_from_table(table=self.CHANNEL_TABLE, order_by='priority')
         for row in result:
-            yield self._table_row_to_channel_dict(row)
+            yield self._table_row_to_channel_dict(row, )
 
     def add_channel(self, channel_data: Dict) -> None:
         """ Insert the provided channel into the database"""
@@ -158,6 +158,7 @@ class YoutubeMySqlDatastore(HighMySQL):
             min_likes:
             min_replies:
         """
+        self.select_from_table(self.COMMENTS_TABLE)
 
         comment_cols = 'video_link, comment, comment_time, like_count, reply_count, comment_link'
         channel_cols = 'username, channel_photo'
@@ -199,6 +200,65 @@ class YoutubeMySqlDatastore(HighMySQL):
         self.update_table(table=self.COMMENTS_TABLE,
                           set_data=set_data,
                           where=f"video_link='{video_link}'")
+
+    def select_join(self, left_table: str, right_table: str,
+                    join_key_left: str, join_key_right: str,
+                    left_columns: str = '', right_columns: str = '', custom_columns: str = '',
+                    join_type: str = 'INNER',
+                    where: str = 'TRUE', order_by: str = 'NULL', asc_or_desc: str = 'ASC',
+                    limit: int = 1000, group_by: str = '', having: str = '') -> List[Tuple]:
+        """
+        Join two tables and select.
+
+        Args:
+            left_table:
+            right_table:
+            left_columns:
+            right_columns:
+            custom_columns: Custom columns for which no `l.` or `r.` will be added automatically
+            join_key_left: The column of join of the left table
+            join_key_right: The column of join of the right table
+            join_type: OneOf(INNER, LEFT, RIGHT)
+            where: Add a `l.` or `.r` before the specified columns
+            order_by: Add a `l.` or `.r` before the specified columns
+            asc_or_desc:
+            limit:
+            group_by: Add a `l.` or `.r` before the specified columns
+            having: Add a `l.` or `.r` before the specified columns
+        """
+
+        # Construct Group By
+        if group_by:
+            if having:
+                having = f'HAVING {having}'
+            group_by = f'GROUP BY {group_by} {having} '
+
+        # Construct Columns
+        if left_columns:
+            left_columns = 'l.' + ', l.'.join(map(str.strip, left_columns.split(',')))
+            if right_columns or custom_columns:
+                left_columns += ', '
+        if right_columns:
+            right_columns = 'r.' + ', r.'.join(map(str.strip, right_columns.split(',')))
+            if custom_columns:
+                right_columns += ', '
+        columns = f'{left_columns} {right_columns} {custom_columns}'
+
+        # Build the Query
+        query = f"SELECT {columns} " \
+                f"FROM {left_table} l " \
+                f"{join_type} JOIN {right_table} r " \
+                f"ON l.{join_key_left}=r.{join_key_right} " \
+                f"WHERE {where} " \
+                f"{group_by}" \
+                f"ORDER BY {order_by} {asc_or_desc} " \
+                f"LIMIT {limit}"
+
+        logger.debug("Executing: %s" % query)
+        self._cursor.execute(query)
+        results = self._cursor.fetchall()
+
+        return results
 
     @staticmethod
     def _table_row_to_channel_dict(row: Tuple) -> Dict:
