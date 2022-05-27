@@ -7,11 +7,13 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [X] Integrate YoutubeMysql class into the YoutubeManager class
 - [X] Use the pypi packages I have created instead of the local ones
 - [ ] Create the workflow for the commenter
+- [ ] Find a better way to change priorities (probably add a function to push everything)
 - [ ] Roll the comments for each channel - store comments in sql table?
 - [ ] Create table with errors
 - [ ] Create the workflow for the accumulator
-- [ ] Add SQL script for creating the tables needed
+- [ ] Add SQL scripts for creating the tables needed
 - [ ] Send me email on fatal error
 - [ ] Recreate the Livestreaming module
 - [ ] Improve the YouTube api functions used (Activities api func - https://developers.google.com/youtube/v3/docs/activities/list)
-- [ ] Use multiple account (different api keys) to check for new comments
+- [ ] Use multiple accounts (different api keys) to check for new comments
+- [ ] Regularly backup logs files from logs/ to dropbox (for when running on Heroku)

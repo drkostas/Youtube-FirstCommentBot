@@ -64,7 +64,8 @@ class YoutubeApiV3(AbstractYoutubeApi):
         flow = OAuth2WebServerFlow(client_id=client_id,
                                    client_secret=client_secret,
                                    scope=read_only_scope)
-        key_path = os.path.join('../../youbot (3)', 'keys', f'{tag}.json')
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        key_path = os.path.join(base_path, '../../', 'keys', f'{tag}.json')
         storage = Storage(key_path)
         credentials = storage.get()
 

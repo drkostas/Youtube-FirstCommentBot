@@ -1,13 +1,13 @@
 import traceback
 import argparse
 
-from youbot import Configuration, ColorizedLogger, YoutubeManager
+from youbot import Configuration, ColorLogger, YoutubeManager
 
-logger = ColorizedLogger(logger_name='Main', color='yellow')
+logger = ColorLogger(logger_name='Main', color='yellow')
 
 
 def get_args() -> argparse.Namespace:
-    """ Setup the argument parser.
+    """ Set up the argument parser.
 
     Returns:
         argparse.Namespace:
@@ -63,6 +63,10 @@ def accumulator(youtube: YoutubeManager, args: argparse.Namespace) -> None:
     raise NotImplementedError()
 
 
+def set_priority(youtube: YoutubeManager, args: argparse.Namespace) -> None:
+    raise NotImplementedError()
+
+
 def add_channel(youtube: YoutubeManager, args: argparse.Namespace) -> None:
     youtube.add_channel(channel_id=args.id, username=args.username)
 
@@ -85,20 +89,20 @@ def refresh_photos(youtube: YoutubeManager, args: argparse.Namespace) -> None:
 
 
 def main():
-    """ This is the main function of main.py
+    """ This is the main function of run.py
 
     Example:
-        python youbot/main.py -m run_mode_1 -c confs/conf.yml -l logs/output.log
+        python youbot/run.py -m run_mode_1 -c confs/conf.yml -l logs/output.log
     """
 
     # Initializing
     args = get_args()
-    ColorizedLogger.setup_logger(log_path=args.log, debug=args.debug, clear_log=True)
+    ColorLogger.setup_logger(log_path=args.log, debug=args.debug, clear_log=True)
     # Load the configurations
     conf_obj = Configuration(config_src=args.config_file)
     you_conf = conf_obj.get_config('youtube')[0]
     db_conf = conf_obj.get_config('datastore')[0]
-    # Setup Youtube API
+    # Setup YouTube API
     youtube = YoutubeManager(config=you_conf['config'], db_conf=db_conf,
                              sleep_time=you_conf['sleep_time'], tag=conf_obj.tag)
     # Run in the specified run mode
