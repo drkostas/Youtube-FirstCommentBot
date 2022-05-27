@@ -71,7 +71,7 @@ install:
 	@echo "To activate the conda environment run:"
 	@echo '    conda activate youbot'
 clean:
-	$(PYTHON_BIN)python setup.py clean
+	$(BIN)/python setup.py clean
 delete_env:
 	@echo "Deleting virtual environment.."
 	eval $(DELETE_COMMAND)
@@ -79,7 +79,7 @@ create_env:
 	@echo "Creating virtual environment.."
 	eval $(CREATE_COMMAND)
 requirements:
-	pip install -r requirements.txt
+	$(BIN)/pip install -r requirements.txt
 setup:
 	$(BIN)/pip install setuptools
 	$(BIN)/python setup.py install $(SETUP_FLAG)
