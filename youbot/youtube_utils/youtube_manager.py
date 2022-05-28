@@ -12,9 +12,10 @@ logger = ColorLogger('YoutubeManager')
 class YoutubeManager(YoutubeApiV3):
     __slots__ = ('db', 'sleep_time')
 
-    def __init__(self, config: Dict, db_conf: Dict, sleep_time: int, tag: str):
+    def __init__(self, config: Dict, db_conf: Dict, sleep_time: int, max_posted_hours: int, tag: str):
         self.db = YoutubeMySqlDatastore(config=db_conf['config'])
         self.sleep_time = sleep_time
+        self.max_posted_hours = max_posted_hours
         super().__init__(config, tag)
 
     def commenter(self):
@@ -28,7 +29,7 @@ class YoutubeManager(YoutubeApiV3):
             comments = self.db.get_comments(n_recent=50)
             video_links_commented = [comment['video_link'] for comment in comments]
             latest_videos = self.get_uploads(channels=channel_ids,
-                                                  last_n_hours=250)  # TODO: make this configurable
+                                             max_posted_hours=self.max_posted_hours)
             comments_added = []
             # Sort the videos by the priority of the channels (channel_ids are sorted by priority)
             # and comment in the videos not already commented
@@ -112,7 +113,8 @@ class YoutubeManager(YoutubeApiV3):
                      )
                     for row in self.db.get_channels()]
 
-        headers = ['Priority', 'Channel Name', 'Channel ID', 'Added On', 'Last Commented', 'Channel Photo']
+        headers = ['Priority', 'Channel Name', 'Channel ID', 'Added On', 'Last Commented',
+                   'Channel Photo']
         self.pretty_print(headers, channels)
 
     def list_comments(self, n_recent: int = 50, min_likes: int = -1,
