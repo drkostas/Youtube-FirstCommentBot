@@ -24,20 +24,21 @@ class YoutubeManager(YoutubeApiV3):
         while True:
             time.sleep(sleep_time)
             channel_ids = [channel['channel_id'] for channel in
-                           self.db.get_channels(order_by='priority')]
+                           self.db.get_channels()]
             comments = self.db.get_comments(n_recent=50)
             video_links_commented = [comment['video_link'] for comment in comments]
-            latest_videos = self.get_uploads(channels=channel_ids, last_n_hours=250)
+            latest_videos = self.get_uploads(channels=channel_ids,
+                                                  last_n_hours=250)  # TODO: make this configurable
             comments_added = []
             # Sort the videos by the priority of the channels (channel_ids are sorted by priority)
             # and comment in the videos not already commented
             try:
                 for video in sorted(latest_videos,
-                                    key=lambda video: channel_ids.index(video["channel_id"])):
+                                    key=lambda _video: channel_ids.index(_video["channel_id"])):
                     video_url = f'https://youtube.com/watch?v={video["id"]}'
                     if video_url not in video_links_commented:
                         comment_text = self.get_next_comment(channel_id=video["channel_id"])
-                        self.comment(video_id=video["id"], comment_text=comment_text)
+                        # self.comment(video_id=video["id"], comment_text=comment_text)
                         # Add the info of the new comment to be added in the DB
                         comments_added.append((video, video_url, comment_text,
                                                datetime.utcnow().isoformat()))
@@ -51,8 +52,7 @@ class YoutubeManager(YoutubeApiV3):
             try:
                 for (video, video_url, comment_text, comment_time) in comments_added:
                     self.db.add_comment(video["channel_id"], video_link=video_url,
-                                        comment_text=comment_text, upload_time=video["published_at"],
-                                        comment_time=comment_time)
+                                        comment_text=comment_text, upload_time=video["published_at"])
             except Exception as e:
                 logger.error(f"MySQL error while storing comment:\n{e}")
                 raise e
@@ -90,13 +90,29 @@ class YoutubeManager(YoutubeApiV3):
         for channel_id, picture_url in profile_pictures:
             self.db.update_channel_photo(channel_id, picture_url)
 
+    def set_priority(self, channel_id: str = None, username: str = None, priority: str = None) -> None:
+        if channel_id:
+            channel_info = self.get_channel_info_by_id(channel_id)
+        elif username:
+            channel_info = self.get_channel_info_by_username(username)
+        else:
+            raise YoutubeManagerError("You should either pass channel id or username "
+                                      "to add channel!")
+        if channel_info:
+            self.db.set_priority(channel_data=channel_info, priority=priority)
+            logger.info(f"Channel `{channel_info['username']}` priority changed to {priority}!")
+        else:
+            raise YoutubeManagerError("Channel not found!")
+
     def list_channels(self) -> None:
-        channels = [(row["channel_id"], row["username"].title(),
+        channels = [(row["priority"], row["username"].title(), row["channel_id"],
                      arrow.get(row["added_on"]).humanize(),
-                     arrow.get(row["last_commented"]).humanize())
+                     arrow.get(row["last_commented"]).humanize(),
+                     row["channel_photo"]
+                     )
                     for row in self.db.get_channels()]
 
-        headers = ['Channel Id', 'Channel Name', 'Added On', 'Last Commented']
+        headers = ['Priority', 'Channel Name', 'Channel ID', 'Added On', 'Last Commented', 'Channel Photo']
         self.pretty_print(headers, channels)
 
     def list_comments(self, n_recent: int = 50, min_likes: int = -1,

@@ -29,7 +29,7 @@ def get_args() -> argparse.Namespace:
     optional_args = parser.add_argument_group('Optional Arguments')
     commands = ['commenter', 'accumulator',
                 'add_channel', 'remove_channel', 'list_channels', 'list_comments',
-                'refresh_photos']
+                'refresh_photos', 'set_priority']
     optional_args.add_argument('-m', '--run-mode', choices=commands,
                                default=commands[0],
                                help='Description of the run modes')
@@ -42,6 +42,8 @@ def get_args() -> argparse.Namespace:
                                help="Number of minimum liked for `list_comments`")
     optional_args.add_argument('--min_replies', default=-1,
                                help="Number of minimum replies for `list_comments`")
+    optional_args.add_argument('--priority',
+                               help="Priority number for specified channel for `set_priority`")
     optional_args.add_argument('-d', '--debug', action='store_true',
                                help='Enables the debug log messages')
     optional_args.add_argument("-h", "--help", action="help", help="Show this help message and exit")
@@ -49,9 +51,13 @@ def get_args() -> argparse.Namespace:
     args = parser.parse_args()
     # Custom Condition Checking
     if (args.id is None and args.username is None) and \
-            args.run_mode in ['add_channel', 'remove_channel']:
+            args.run_mode in ['add_channel', 'remove_channel', 'set_priority']:
         parser.error('You need to pass either --id or --username when selecting '
-                     'the `add_channel` and `remove_channel` actions')
+                     'the `add_channel`, `remove_channel`, or `set_priority` actions')
+    if (args.priority is None) and \
+            args.run_mode in ['set_priority']:
+        parser.error('You need to pass --priority when selecting '
+                     'the `set_priority` action')
     return args
 
 
@@ -64,7 +70,8 @@ def accumulator(youtube: YoutubeManager, args: argparse.Namespace) -> None:
 
 
 def set_priority(youtube: YoutubeManager, args: argparse.Namespace) -> None:
-    raise NotImplementedError()
+    youtube.set_priority(channel_id=args.id, username=args.username,
+                         priority=args.priority)
 
 
 def add_channel(youtube: YoutubeManager, args: argparse.Namespace) -> None:

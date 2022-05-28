@@ -60,8 +60,50 @@ class YoutubeMySqlDatastore(HighMySQL):
         """ Insert the provided channel into the database"""
 
         try:
-            self.insert_into_table(table=self.CHANNEL_TABLE, data=channel_data, if_not_exists=True)
-        except HighMySQL.mysql.connector.errors.IntegrityError as e:
+            # TODO: Implement if_not_exists=True in HighMySQL
+            self.insert_into_table(table=self.CHANNEL_TABLE, data=channel_data)
+        except Exception as e:
+            # TODO: except HighMySQL.mysql.connector.errors.IntegrityError as e:
+            # Expose mysql in HighMySQL
+            logger.error(f"MySQL error: {e}")
+
+    def set_priority(self, channel_data: Dict, priority: str) -> None:
+        """ Insert the provided channel into the database"""
+        priority = int(priority)
+        req_priority = priority
+        req_channel_id = channel_data['channel_id']
+        channels = list(self.get_channels())
+        try:
+            # Give all channels a temp priority
+            for channel in channels:
+                channel_id = channel['channel_id']
+                # Execute the update command
+                self.update_table(table=self.CHANNEL_TABLE,
+                                  set_data={'priority': -int(channel['priority'])},
+                                  where=f"channel_id='{channel_id}'")
+            # Update the other channels
+            ch_cnt = 1
+            for channel in channels:
+                channel_id = channel['channel_id']
+                if channel_id == req_channel_id:
+                    continue
+                if channel['priority'] < req_priority:
+                    set_data = {'priority': ch_cnt}
+                    ch_cnt += 1
+                else:
+                    set_data = {'priority': priority + 1}
+                    priority += 1
+                # Execute the update command
+                self.update_table(table=self.CHANNEL_TABLE,
+                                  set_data=set_data,
+                                  where=f"channel_id='{channel_id}'")
+            # Update the requested channel
+            self.update_table(table=self.CHANNEL_TABLE,
+                              set_data={'priority': req_priority},
+                              where=f"channel_id='{req_channel_id}'")
+        except Exception as e:
+            # TODO: except HighMySQL.mysql.connector.errors.IntegrityError as e:
+            # Expose mysql in HighMySQL
             logger.error(f"MySQL error: {e}")
 
     def get_channel_by_id(self, ch_id: str) -> Tuple:
@@ -125,20 +167,22 @@ class YoutubeMySqlDatastore(HighMySQL):
                           set_data=set_data,
                           where=f"channel_id='{channel_id}'")
 
-    def add_comment(self, ch_id: str, video_link: str, comment_text: str) -> None:
+    def add_comment(self, ch_id: str, video_link: str, comment_text: str, upload_time: str) -> None:
         """ TODO: check the case where a comment contains single quotes
         Add comment data and update the `last_commented` channel column.
         Args:
             ch_id:
             video_link:
             comment_text:
+            upload_time:
         """
 
         datetime_now = datetime.utcnow().isoformat()
         comments_data = {'channel_id': ch_id,
                          'video_link': video_link,
                          'comment': comment_text,
-                         'comment_time': datetime_now}
+                         'comment_time': datetime_now,
+                         'upload_time': upload_time}
         update_data = {'last_commented': datetime_now}
         where_statement = f"channel_id='{ch_id}'"
 
@@ -146,7 +190,9 @@ class YoutubeMySqlDatastore(HighMySQL):
             self.insert_into_table(self.COMMENTS_TABLE, data=comments_data)
             # Update Channel's last_commented timestamp
             self.update_table(table=self.CHANNEL_TABLE, set_data=update_data, where=where_statement)
-        except HighMySQL.mysql.connector.errors.IntegrityError as e:
+        except Exception as e:
+            # TODO: except HighMySQL.mysql.connector.errors.IntegrityError as e:
+            # Expose mysql in HighMySQL
             logger.error(f"MySQL Error: {e}")
 
     def get_comments(self, n_recent: int = 50, min_likes: int = -1,
@@ -201,6 +247,7 @@ class YoutubeMySqlDatastore(HighMySQL):
                           set_data=set_data,
                           where=f"video_link='{video_link}'")
 
+    # TODO: Add this to HighMySQL
     def select_join(self, left_table: str, right_table: str,
                     join_key_left: str, join_key_right: str,
                     left_columns: str = '', right_columns: str = '', custom_columns: str = '',

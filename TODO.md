@@ -6,8 +6,8 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [X] Create child MySQL class
 - [X] Integrate YoutubeMysql class into the YoutubeManager class
 - [X] Use the pypi packages I have created instead of the local ones
+- [X] Find a better way to change priorities (probably add a function to push everything)
 - [ ] Create the workflow for the commenter
-- [ ] Find a better way to change priorities (probably add a function to push everything)
 - [ ] Roll the comments for each channel - store comments in sql table?
 - [ ] Create table with errors
 - [ ] Create the workflow for the accumulator
