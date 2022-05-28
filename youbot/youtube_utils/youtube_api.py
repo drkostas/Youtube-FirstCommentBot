@@ -100,6 +100,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
                           'snippet.topLevelComment.snippet.textOriginal': comment_text}
             # self._comment_threads_insert(properties=properties,
             #                              part='snippet')
+            # TODO: uncomment this when commenter is done
         except Exception as exc:
             logger.error(f"An error occurred:\n{exc}")
 
@@ -139,12 +140,12 @@ class YoutubeApiV3(AbstractYoutubeApi):
 
         return self._yt_to_channel_dict(channels_response)
 
-    def get_uploads(self, channels: List, last_n_hours: int = 2) -> Dict:
+    def get_uploads(self, channels: List, max_posted_hours: int = 2) -> Dict:
         """ Retrieves new uploads for the specified channels.
 
         Args:
             channels(list): A list with channel IDs
-            last_n_hours:
+            max_posted_hours:
         """
 
         # Separate the channels list in 50-sized channel lists
@@ -161,7 +162,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
         # For each playlist ID, get 50 videos
         for channel in channels_to_check:
             uploads_list_id = channel["contentDetails"]["relatedPlaylists"]["uploads"]
-            for upload in self._get_uploads_playlist(uploads_list_id, last_n_hours):
+            for upload in self._get_uploads_playlist(uploads_list_id, max_posted_hours):
                 upload['channel_title'] = channel['snippet']['title']
                 upload['channel_id'] = channel['id']
                 yield upload
@@ -274,8 +275,8 @@ class YoutubeApiV3(AbstractYoutubeApi):
 
         return output_list
 
-    def _get_uploads_playlist(self, uploads_list_id: str, last_n_hours: int = 2) -> Dict:
-        """ Retrieves uploads using the specified playlist ID which were have been added
+    def _get_uploads_playlist(self, uploads_list_id: str, max_posted_hours: int = 2) -> Dict:
+        """ Retrieves uploads using the specified playlist ID which were had been added
         since the last check.
 
         Args:
@@ -296,7 +297,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
                 published_at = dateutil.parser.parse(playlist_item['snippet']['publishedAt'])
                 video = dict()
                 # Return the video only if it was published in the last `last_n_hours` hours
-                if published_at >= (datetime.utcnow() - timedelta(hours=last_n_hours)).replace(
+                if published_at >= (datetime.utcnow() - timedelta(hours=max_posted_hours)).replace(
                         tzinfo=timezone.utc):
                     video['id'] = playlist_item["snippet"]["resourceId"]["videoId"]
                     video['published_at'] = playlist_item["snippet"]["publishedAt"]
@@ -310,7 +311,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
             )
 
     def _comment_threads_insert(self, properties: Dict, **kwargs: Any) -> Dict:
-        """ Comment using the Youtube API.
+        """ Comment using the YouTube API.
         Args:
             properties:
             **kwargs:

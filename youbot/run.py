@@ -111,7 +111,9 @@ def main():
     db_conf = conf_obj.get_config('datastore')[0]
     # Setup YouTube API
     youtube = YoutubeManager(config=you_conf['config'], db_conf=db_conf,
-                             sleep_time=you_conf['sleep_time'], tag=conf_obj.tag)
+                             sleep_time=you_conf['sleep_time'],
+                             max_posted_hours=you_conf['max_posted_hours'],
+                             tag=conf_obj.tag)
     # Run in the specified run mode
     func = globals()[args.run_mode]
     func(youtube, args)
