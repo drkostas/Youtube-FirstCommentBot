@@ -1,9 +1,12 @@
 from typing import *
 from datetime import datetime, timedelta
+from dateutil import parser
 import time
 import arrow
 import random
 import string
+import os
+from glob import glob
 
 from youbot import ColorLogger, YoutubeMySqlDatastore
 from .youtube_api import YoutubeApiV3
@@ -12,28 +15,34 @@ logger = ColorLogger('YoutubeManager')
 
 
 class YoutubeManager(YoutubeApiV3):
-    __slots__ = ('db', 'sleep_time')
+    __slots__ = ('db', 'comments_conf', 'default_sleep_time', 'max_posted_hours', 'api_type',
+                 'template_comments')
 
-    def __init__(self, config: Dict, db_conf: Dict, sleep_time: int, max_posted_hours: int,
+    def __init__(self, config: Dict, db_conf: Dict, comments_conf: Dict,
+                 sleep_time: int, max_posted_hours: int,
                  api_type: str, tag: str):
         self.db = YoutubeMySqlDatastore(config=db_conf['config'])
-        self.sleep_time = sleep_time
+        self.comments_conf = comments_conf['config']
+        self.default_sleep_time = sleep_time
         self.max_posted_hours = max_posted_hours
         self.api_type = api_type
+        self.template_comments = {}
         if self.api_type == 'simulated':
             self.get_uploads = self.simulate_uploads
         super().__init__(config, tag)
 
     def commenter(self):
-        # Set sleep_time = 0 for the first loop
+        # Initialize
         sleep_time = 0
         # Start the main loop
         while True:
             time.sleep(sleep_time)
+            self.load_template_comments()
             channel_ids = [channel['channel_id'] for channel in
                            self.db.get_channels()]
-            comments = self.db.get_comments(n_recent=50)
-            video_links_commented = [comment['video_link'] for comment in comments]
+            commented_comments, video_links_commented = self.get_comments(channel_ids=channel_ids,
+                                                                          n_recent=500)
+
             latest_videos = self.get_uploads(channels=channel_ids,
                                              max_posted_hours=self.max_posted_hours)
             comments_added = []
@@ -44,9 +53,11 @@ class YoutubeManager(YoutubeApiV3):
                                     key=lambda _video: channel_ids.index(_video["channel_id"])):
                     video_url = f'https://youtube.com/watch?v={video["id"]}'
                     if video_url not in video_links_commented:
-                        comment_text = self.get_next_comment(channel_id=video["channel_id"])
+                        comment_text = \
+                            self.get_next_template_comment(channel_id=video["channel_id"],
+                                                           commented_comments=commented_comments)
                         # self.comment(video_id=video["id"], comment_text=comment_text)
-                        # Add the info of the new comment to be added in the DB
+                        # Add the info of the new comment to be added in the DB after this loop
                         comments_added.append((video, video_url, comment_text,
                                                datetime.utcnow().isoformat()))
             except Exception as e:
@@ -54,7 +65,7 @@ class YoutubeManager(YoutubeApiV3):
                 sleep_time = self.seconds_until_next_hour()
                 logger.error(f"Will sleep until next hour ({sleep_time} seconds)")
             else:
-                sleep_time = self.sleep_time
+                sleep_time = self.default_sleep_time
             # Save the new comments added in the DB
             try:
                 for (video, video_url, comment_text, comment_time) in comments_added:
@@ -63,8 +74,16 @@ class YoutubeManager(YoutubeApiV3):
             except Exception as e:
                 logger.error(f"MySQL error while storing comment:\n{e}")
                 raise e
-            # TODO: REMOVE ME when commenter is done
-            break
+
+    def get_comments(self, n_recent, channel_ids):
+        commented_comments = {}
+        video_links_commented = []
+        for channel_id in channel_ids:
+            commented_comments[channel_id] = list(self.db.get_comments(channel_id=channel_id,
+                                                                       n_recent=n_recent))
+            video_links_commented += [comment['video_link'] for comment in
+                                      commented_comments[channel_id]]
+        return commented_comments, video_links_commented
 
     def add_channel(self, channel_id: str = None, username: str = None) -> None:
         if channel_id:
@@ -134,8 +153,41 @@ class YoutubeManager(YoutubeApiV3):
         headers = ['Channel', 'Comment', 'Time', 'Likes', 'Replies', 'Comment URL']
         self.pretty_print(headers, comments)
 
-    def get_next_comment(self, channel_id: str) -> str:
-        return f"Test comment for {channel_id}"
+    def load_template_comments(self):
+        if self.comments_conf['type'] == 'local':
+            base_path = os.path.dirname(os.path.abspath(__file__))
+            comments_path = os.path.join(base_path, '../..', self.comments_conf['folder_name'],
+                                         "*.txt")
+            for file in glob(comments_path):
+                file_name = file.split('/')[-1][:-4]
+                with open(file) as f:
+                    self.template_comments[file_name] = [_f.rstrip() for _f in f.readlines()]
+
+    def get_next_template_comment(self, channel_id: str, commented_comments: Dict) -> str:
+        """ TODO: Probably much more efficient with numpy or sql. """
+        commented_comments = commented_comments[channel_id]
+        available_comments = self.template_comments['default'].copy()
+        # Build the comments pool
+        if channel_id in self.template_comments:
+            available_comments += self.template_comments[channel_id]
+        # Extract unique comments commented
+        unique_com_coms = set(data['comment'] for data in commented_comments)
+        new_comments = set(available_comments) - unique_com_coms
+        if new_comments:  # If we have new template comments
+            comment = next(iter(new_comments))
+        else:  # Otherwise, pick the oldest one (with duplicate handling
+            comment_dates = {}
+            for unique_comment in unique_com_coms:
+                comment_dates[unique_comment] = parser.parse('1994-04-30T08:00:00.000000')
+                for com_data in commented_comments:
+                    if com_data['comment'] == unique_comment:
+                        comment_time = parser.parse(com_data['comment_time'])
+                        if comment_time > comment_dates[unique_comment]:
+                            comment_dates[unique_comment] = parser.parse(com_data['comment_time'])
+            comment = [k for k, v in sorted(comment_dates.items(),
+                                            key=lambda p: p[1], reverse=False)][0]
+
+        return comment
 
     def simulate_uploads(self, channels: List, max_posted_hours: int = 2) -> Dict:
         """ Generates new uploads for the specified channels.
@@ -153,6 +205,7 @@ class YoutubeManager(YoutubeApiV3):
             title_length = random.randint(10, 40)
             vid_title = ''.join(random.choices(string.ascii_lowercase + ' ', k=title_length)).title()
             ch_name, ch_id = random.choice(channels)
+            channels.remove((ch_name, ch_id))
             secs = random.randint(1, 59)
             mins = random.randint(1, 59)
             hours = random.randint(1, 59)
