@@ -2,6 +2,8 @@ from typing import *
 from datetime import datetime, timedelta
 import time
 import arrow
+import random
+import string
 
 from youbot import ColorLogger, YoutubeMySqlDatastore
 from .youtube_api import YoutubeApiV3
@@ -12,10 +14,14 @@ logger = ColorLogger('YoutubeManager')
 class YoutubeManager(YoutubeApiV3):
     __slots__ = ('db', 'sleep_time')
 
-    def __init__(self, config: Dict, db_conf: Dict, sleep_time: int, max_posted_hours: int, tag: str):
+    def __init__(self, config: Dict, db_conf: Dict, sleep_time: int, max_posted_hours: int,
+                 api_type: str, tag: str):
         self.db = YoutubeMySqlDatastore(config=db_conf['config'])
         self.sleep_time = sleep_time
         self.max_posted_hours = max_posted_hours
+        self.api_type = api_type
+        if self.api_type == 'simulated':
+            self.get_uploads = self.simulate_uploads
         super().__init__(config, tag)
 
     def commenter(self):
@@ -57,7 +63,7 @@ class YoutubeManager(YoutubeApiV3):
             except Exception as e:
                 logger.error(f"MySQL error while storing comment:\n{e}")
                 raise e
-            # REMOVE ME
+            # TODO: REMOVE ME when commenter is done
             break
 
     def add_channel(self, channel_id: str = None, username: str = None) -> None:
@@ -130,6 +136,35 @@ class YoutubeManager(YoutubeApiV3):
 
     def get_next_comment(self, channel_id: str) -> str:
         return f"Test comment for {channel_id}"
+
+    def simulate_uploads(self, channels: List, max_posted_hours: int = 2) -> Dict:
+        """ Generates new uploads for the specified channels.
+
+        Args:
+            channels(list): A list with channel IDs
+            max_posted_hours:
+        """
+        num_videos = random.randint(1, 4)
+        channels = [(channel['username'], channel['channel_id']) for channel in
+                    self.db.get_channels()]
+        for video_ind in range(num_videos):
+            vid_id = ''.join(
+                random.choices(string.ascii_uppercase + string.ascii_lowercase + string.digits, k=11))
+            title_length = random.randint(10, 40)
+            vid_title = ''.join(random.choices(string.ascii_lowercase + ' ', k=title_length)).title()
+            ch_name, ch_id = random.choice(channels)
+            secs = random.randint(1, 59)
+            mins = random.randint(1, 59)
+            hours = random.randint(1, 59)
+            published_at = (datetime.utcnow() - timedelta(seconds=secs,
+                                                          minutes=mins,
+                                                          hours=hours)).isoformat()
+            upload = {'id': vid_id,
+                      'published_at': published_at,
+                      'title': vid_title,
+                      'channel_title': ch_name,
+                      'channel_id': ch_id}
+            yield upload
 
     @staticmethod
     def pretty_print(headers: List[str], data: List[Tuple]):
