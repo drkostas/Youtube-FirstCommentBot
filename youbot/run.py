@@ -109,8 +109,9 @@ def main():
     conf_obj = Configuration(config_src=args.config_file)
     you_conf = conf_obj.get_config('youtube')[0]
     db_conf = conf_obj.get_config('datastore')[0]
+    comments_conf = conf_obj.get_config('comments')[0]
     # Setup YouTube API
-    youtube = YoutubeManager(config=you_conf['config'], db_conf=db_conf,
+    youtube = YoutubeManager(config=you_conf['config'], db_conf=db_conf, comments_conf=comments_conf,
                              sleep_time=you_conf['sleep_time'],
                              max_posted_hours=you_conf['max_posted_hours'],
                              api_type=you_conf['type'], tag=conf_obj.tag)

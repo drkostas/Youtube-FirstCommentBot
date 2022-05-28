@@ -23,10 +23,9 @@ youtube:
       api_version: v3
       read_only_scope: https://www.googleapis.com/auth/youtube.force-ssl
     sleep_time: 60
-    max_posted_hours: 250  # max num. of hours to check back for videos
+    max_posted_hours: 250  # max num. of hours to check back for posted videos
     type: simulated  # normal, simulated
-comment:
+comments:
   - config:
-      comments_list:
-        path: ../comments/sample_comments.txt
-        type: local  # local, dropbox, or mysql
+      folder_name: comments
+      type: local  # local, dropbox, or mysql

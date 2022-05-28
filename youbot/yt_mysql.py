@@ -196,7 +196,7 @@ class YoutubeMySqlDatastore(HighMySQL):
             logger.error(f"MySQL Error: {e}")
 
     def get_comments(self, n_recent: int = 50, min_likes: int = -1,
-                     min_replies: int = -1) -> List[Dict]:
+                     min_replies: int = -1, channel_id: str = None) -> List[Dict]:
         """
         Get the latest n_recent comments from the comments table.
         Args:
@@ -207,8 +207,10 @@ class YoutubeMySqlDatastore(HighMySQL):
         self.select_from_table(self.COMMENTS_TABLE)
 
         comment_cols = 'video_link, comment, comment_time, like_count, reply_count, comment_link'
-        channel_cols = 'username, channel_photo'
+        channel_cols = 'username, channel_id, channel_photo'
         where = f'l.like_count>={min_likes} AND l.reply_count>={min_replies} '
+        if channel_id:
+            where += f"AND l.channel_id='{channel_id}'"
         for comment in self.select_join(left_table=self.COMMENTS_TABLE,
                                         right_table=self.CHANNEL_TABLE,
                                         left_columns=comment_cols,
