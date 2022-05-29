@@ -13,6 +13,7 @@ youtube:
       client_secret: !ENV ${CLIENT_SECRET_COMM}
       api_version: v3
       read_only_scope: https://www.googleapis.com/auth/youtube.force-ssl
+      username: !ENV ${USERNAME_COMM}  # Can be omitted (automatically derived)
       load_keys_from_cloud: true  # cloudstore config is required
       keys_path: keys
       sleep_time: !ENV ${SLEEP_TIME_COMM}

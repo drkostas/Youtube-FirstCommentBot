@@ -16,8 +16,8 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [X] Load yt keys from Dropbox
 - [X] Add SQL scripts for creating the tables needed (automatically checks and creates on init)
 - [X] Different YT env vars for each yml
-- [ ] Option to set username manually
-- [ ] Test that everything works properly
+- [X] Option to set username manually
+- [X] Test that everything works properly
 - [ ] Configure Procfile and circleci config
 - [ ] Update Readme
 - [ ] Recreate the Livestreaming module

@@ -17,7 +17,8 @@ logger = ColorLogger(logger_name='YoutubeManager', color='cyan')
 class YoutubeManager(YoutubeApiV3):
     __slots__ = ('db', 'dbox', 'comments_conf', 'default_sleep_time', 'max_posted_hours', 'api_type',
                  'template_comments', 'log_path', 'upload_logs_every', 'keys_path',
-                 'dbox_logs_folder_path', 'dbox_keys_folder_path', 'comments_src')
+                 'dbox_logs_folder_path', 'dbox_keys_folder_path', 'comments_src',
+                 'comment_search_term')
 
     def __init__(self, config: Dict, db_conf: Dict, cloud_conf: Dict, comments_conf: Dict,
                  sleep_time: int, max_posted_hours: int,
@@ -49,10 +50,15 @@ class YoutubeManager(YoutubeApiV3):
             self.get_uploads = self.simulate_uploads
         self.keys_path = config['keys_path']
         self.log_path = log_path
+        self.comment_search_term = None
+        if 'comment_search_term' in config:
+            self.comment_search_term = config['comment_search_term']
         if 'load_keys_from_cloud' in config:
             if config['load_keys_from_cloud'] is True:
                 self.load_keys_from_cloud()
         super().__init__(config, tag)
+        if 'username' in config:
+            self.channel_name = config['username']
 
     def commenter(self):
         # Initialize
@@ -87,7 +93,7 @@ class YoutubeManager(YoutubeApiV3):
                         comment_text = \
                             self.get_next_template_comment(channel_id=video["channel_id"],
                                                            commented_comments=commented_comments)
-                        # self.comment(video_id=video["id"], comment_text=comment_text)
+                        self.comment(video_id=video["id"], comment_text=comment_text)
                         # Add the info of the new comment to be added in the DB after this loop
                         comments_added.append((video, video_url, comment_text,
                                                datetime.utcnow().isoformat()))
@@ -103,6 +109,7 @@ class YoutubeManager(YoutubeApiV3):
                 for (video, video_url, comment_text, comment_time) in comments_added:
                     self.db.add_comment(video["channel_id"], video_link=video_url,
                                         comment_text=comment_text, upload_time=video["published_at"])
+                    logger.info(f"Comment Added to Channel: {video['channel_id']} ({video_url})")
             except Exception as e:
                 error_txt = f"FatalMySQL error while storing comment:\n{e}"
                 logger.error(error_txt)
@@ -122,7 +129,8 @@ class YoutubeManager(YoutubeApiV3):
                 exceptions = []
                 for cnt, link in enumerate(recent_commented_links):
                     try:
-                        comments.extend(self.get_video_comments(link))
+                        comments.extend(self.get_video_comments(url=link,
+                                                                search_terms=self.comment_search_term))
                     except Exception as e:
                         exceptions.append(e)
                 # Update comment data in the DB
