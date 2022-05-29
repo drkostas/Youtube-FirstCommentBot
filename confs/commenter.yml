@@ -2,6 +2,8 @@ tag: commenter
 cloudstore:
   - config:
       api_key: !ENV ${DROPBOX_API_KEY}
+    logs_folder_path: /yt-commenter/logs
+    upload_logs_every: 120  # number of loops in commenter()
     type: dropbox
 datastore:
   - config:
@@ -22,7 +24,7 @@ youtube:
       client_secret: !ENV ${CLIENT_SECRET}
       api_version: v3
       read_only_scope: https://www.googleapis.com/auth/youtube.force-ssl
-    sleep_time: 60
+    sleep_time: 1
     max_posted_hours: 250  # max num. of hours to check back for posted videos
     type: simulated  # normal, simulated
 comments:

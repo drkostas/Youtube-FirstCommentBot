@@ -16,11 +16,11 @@ logger = ColorLogger('YoutubeManager')
 
 class YoutubeManager(YoutubeApiV3):
     __slots__ = ('db', 'dbox', 'comments_conf', 'default_sleep_time', 'max_posted_hours', 'api_type',
-                 'template_comments')
+                 'template_comments', 'log_path', 'upload_logs_every')
 
     def __init__(self, config: Dict, db_conf: Dict, cloud_conf: Dict, comments_conf: Dict,
                  sleep_time: int, max_posted_hours: int,
-                 api_type: str, tag: str):
+                 api_type: str, tag: str, log_path: str):
         self.db = YoutubeMySqlDatastore(config=db_conf['config'])
         self.dbox = DropboxCloudManager(config=cloud_conf['config'])
         self.comments_conf = comments_conf['config']
@@ -30,14 +30,24 @@ class YoutubeManager(YoutubeApiV3):
         self.template_comments = {}
         if self.api_type == 'simulated':
             self.get_uploads = self.simulate_uploads
+        self.log_path = log_path
+        self.dbox_logs_folder_path = cloud_conf['logs_folder_path']
+        self.upload_logs_every = cloud_conf['upload_logs_every']
         super().__init__(config, tag)
 
     def commenter(self):
         # Initialize
         sleep_time = 0
+        loop_cnt = 0
         # Start the main loop
         while True:
             time.sleep(sleep_time)
+            # Log upload handling
+            loop_cnt += 1
+            if loop_cnt > self.upload_logs_every:
+                self.upload_logs()
+                loop_cnt = 0
+            # Load necessary data
             self.load_template_comments()
             channel_ids = [channel['channel_id'] for channel in
                            self.db.get_channels()]
@@ -199,6 +209,15 @@ class YoutubeManager(YoutubeApiV3):
                                             key=lambda p: p[1], reverse=False)][0]
 
         return comment
+
+    def upload_logs(self):
+        log_name = self.log_path.split(os.sep)[-1][:-4]
+        day = datetime.today().day
+        log_name += f'_day{day}.txt'
+        upload_path = os.path.join(self.dbox_logs_folder_path, log_name)
+        with open(self.log_path, 'rb') as f:
+            file_to_upload = f.read()
+        self.dbox.upload_file(file_bytes=file_to_upload, upload_path=upload_path)
 
     def simulate_uploads(self, channels: List, max_posted_hours: int = 2) -> Dict:
         """ Generates new uploads for the specified channels.

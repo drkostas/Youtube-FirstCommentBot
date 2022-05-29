@@ -116,7 +116,7 @@ def main():
                              db_conf=db_conf, cloud_conf=cloud_conf, comments_conf=comments_conf,
                              sleep_time=you_conf['sleep_time'],
                              max_posted_hours=you_conf['max_posted_hours'],
-                             api_type=you_conf['type'], tag=conf_obj.tag)
+                             api_type=you_conf['type'], tag=conf_obj.tag, log_path=args.log)
     # Run in the specified run mode
     func = globals()[args.run_mode]
     func(youtube, args)
