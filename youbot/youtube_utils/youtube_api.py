@@ -29,7 +29,12 @@ class AbstractYoutubeApi(ABC):
         """
 
         self.tag = tag
-        self._api = self._build_api(**config, tag=self.tag)
+        self._api = self._build_api(
+            client_id=config['client_id'],
+            client_secret=config['client_secret'],
+            api_version=config['api_version'],
+            read_only_scope=config['read_only_scope'],
+            tag=self.tag)
         self.channel_name, self.channel_id = self._get_my_username_and_id()
 
     @staticmethod

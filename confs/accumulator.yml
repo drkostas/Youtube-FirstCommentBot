@@ -13,5 +13,13 @@ youtube:
       client_secret: !ENV ${CLIENT_SECRET}
       api_version: v3
       read_only_scope: https://www.googleapis.com/auth/youtube.force-ssl
-    sleep_time: !ENV ${SLEEP_TIME}
+      sleep_time: !ENV ${SLEEP_TIME}
+      load_keys_from_cloud: true  # cloudstore config is required
+      keys_path: keys
     type: simulated  # normal, simulated
+cloudstore:  # Optional
+  - config:
+      api_key: !ENV ${DROPBOX_API_KEY}
+      logs_folder_path: /yt-commenter/logs
+      keys_folder_path: /yt-commenter/keys
+    type: dropbox
