@@ -1,0 +1,25 @@
+tag: generic
+datastore:
+  - config:
+      hostname: !ENV ${MYSQL_HOST}
+      username: !ENV ${MYSQL_USERNAME}
+      password: !ENV ${MYSQL_PASSWORD}
+      db_name: !ENV ${MYSQL_DB_NAME}
+      port: 3306
+    type: mysql
+youtube:
+  - config:
+      client_id: !ENV ${CLIENT_ID_GEN}
+      client_secret: !ENV ${CLIENT_SECRET_GEN}
+      api_version: v3
+      read_only_scope: https://www.googleapis.com/auth/youtube.force-ssl
+      username: !ENV ${USERNAME_GEN}  # Can be omitted (automatically derived)
+      load_keys_from_cloud: true  # cloudstore config is required
+      keys_path: keys
+    type: normal  # normal, simulated
+cloudstore:  # Optional
+  - config:
+      api_key: !ENV ${DROPBOX_API_KEY}
+      logs_folder_path: /yt-commenter/logs
+      keys_folder_path: /yt-commenter/keys
+    type: dropbox

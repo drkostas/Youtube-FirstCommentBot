@@ -1,0 +1,38 @@
+tag: commenter
+datastore:
+  - config:
+      hostname: !ENV ${MYSQL_HOST}
+      username: !ENV ${MYSQL_USERNAME}
+      password: !ENV ${MYSQL_PASSWORD}
+      db_name: !ENV ${MYSQL_DB_NAME}
+      port: 3306
+    type: mysql
+youtube:
+  - config:
+      client_id: !ENV ${CLIENT_ID_COMM}
+      client_secret: !ENV ${CLIENT_SECRET_COMM}
+      api_version: v3
+      read_only_scope: https://www.googleapis.com/auth/youtube.force-ssl
+      username: !ENV ${USERNAME_COMM}  # Can be omitted (automatically derived)
+      load_keys_from_cloud: true  # cloudstore config is required
+      keys_path: keys
+      sleep_time: !ENV ${SLEEP_TIME_COMM}
+      max_posted_hours: !ENV ${MAX_POSTED_HOURS_COMM} # max num. of hours to check back for posted videos
+    type: normal  # normal, simulated
+comments:
+  - config:
+      local_folder_name: comments
+      dropbox_folder_name: /yt-commenter/comments
+    type: !ENV ${COMMENTS_TYPE}  # local, dropbox (should set `cloudstore` config), or mysql (not implemented)
+cloudstore:  # Optional
+  - config:
+      api_key: !ENV ${DROPBOX_API_KEY}
+      logs_folder_path: /yt-commenter/logs
+      keys_folder_path: /yt-commenter/keys
+      upload_logs_every: !ENV ${UPLOAD_LOGS_EVERY}  # number of loops in commenter()
+    type: dropbox
+#emailer:  # Not implemented yet
+#  - config:
+#      email_address: !ENV ${EMAIL_ADDRESS}
+#      api_key: !ENV ${GMAIL_API_KEY}
+#    type: gmail

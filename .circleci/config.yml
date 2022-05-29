@@ -1,0 +1,11 @@
+version: 2 # use CircleCI 2.0
+jobs: # A basic unit of work in a run
+  build: # runs not using Workflows must have a `build` job as entry point 
+    # directory where steps are run
+    working_directory: ~/youbot
+    docker: # run the steps with Docker
+      # CircleCI Python images available at: https://hub.docker.com/r/circleci/python/
+      - image: circleci/python:3.8
+    steps: # steps that comprise the `build` job
+      - checkout # check out source code to working directory
+      - run: make install env=venv
