@@ -18,7 +18,7 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [X] Different YT env vars for each yml
 - [X] Option to set username manually
 - [X] Test that everything works properly
-- [ ] Configure Procfile and circleci config
+- [X] Configure Procfile and circleci config
 - [ ] Update Readme
 - [ ] Recreate the Livestreaming module
 - [ ] Use multiple accounts (different api keys) to check for new comments

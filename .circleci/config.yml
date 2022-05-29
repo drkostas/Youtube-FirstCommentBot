@@ -8,7 +8,8 @@ jobs: # A basic unit of work in a run
       - image: circleci/python:3.8
     steps: # steps that comprise the `build` job
       - checkout # check out source code to working directory
-      - run: make clean server=circleci
-      - run: make create_env server=circleci
-      - run: make setup server=circleci
-      - run: make run_tests server=circleci
+      - run: make clean env=venv
+      - run: make create_env env=venv
+      - run: make requirements env=venv
+      - run: make setup env=venv
+      - run: make run_tests env=venv
