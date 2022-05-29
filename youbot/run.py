@@ -99,19 +99,21 @@ def main():
     """ This is the main function of run.py
 
     Example:
-        python youbot/run.py -m run_mode_1 -c confs/conf.yml -l logs/output.log
+        python youbot/run.py -m commenter -c confs/commenter.yml -l logs/commenter.log
     """
 
     # Initializing
     args = get_args()
-    ColorLogger.setup_logger(log_path=args.log, debug=args.debug, clear_log=True)
+    ColorLogger.setup_logger(log_path=args.log, debug=args.debug, clear_log=False)
     # Load the configurations
     conf_obj = Configuration(config_src=args.config_file)
     you_conf = conf_obj.get_config('youtube')[0]
     db_conf = conf_obj.get_config('datastore')[0]
+    cloud_conf = conf_obj.get_config('cloudstore')[0]
     comments_conf = conf_obj.get_config('comments')[0]
     # Setup YouTube API
-    youtube = YoutubeManager(config=you_conf['config'], db_conf=db_conf, comments_conf=comments_conf,
+    youtube = YoutubeManager(config=you_conf['config'],
+                             db_conf=db_conf, cloud_conf=cloud_conf, comments_conf=comments_conf,
                              sleep_time=you_conf['sleep_time'],
                              max_posted_hours=you_conf['max_posted_hours'],
                              api_type=you_conf['type'], tag=conf_obj.tag)
