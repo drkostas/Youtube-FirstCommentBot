@@ -112,9 +112,9 @@ def main():
     logger = ColorLogger(logger_name=f'[{tag}] Main', color='yellow')  # Reconfigures it with the tag
     you_conf = conf_obj.get_config('youtube')[0]
     sleep_time = int(you_conf['config']['sleep_time']) \
-        if 'sleep_time' in you_conf else 120
+        if 'sleep_time' in you_conf['config'] else 120
     max_posted_hours = int(you_conf['config']['max_posted_hours']) \
-        if 'max_posted_hours' in you_conf else 24
+        if 'max_posted_hours' in you_conf['config'] else 24
     db_conf = conf_obj.get_config('datastore')[0]
     comments_conf = None
     if 'comments' in conf_obj.config:  # Optional

@@ -105,9 +105,8 @@ class YoutubeApiV3(AbstractYoutubeApi):
             properties = {'snippet.channelId': self.channel_id,
                           'snippet.videoId': video_id,
                           'snippet.topLevelComment.snippet.textOriginal': comment_text}
-            # self._comment_threads_insert(properties=properties,
-            #                              part='snippet')
-            # TODO: uncomment this when commenter is done
+            self._comment_threads_insert(properties=properties,
+                                         part='snippet')
         except Exception as exc:
             logger.error(f"An error occurred:\n{exc}")
 
