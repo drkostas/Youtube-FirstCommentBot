@@ -2,19 +2,21 @@ from youbot import ColorLogger, HighMySQL
 from typing import *
 from datetime import datetime
 
-logger = ColorLogger('YoutubeMySqlDatastore')
+logger = ColorLogger(logger_name='YoutubeMySqlDatastore', color='red')
 
 
 class YoutubeMySqlDatastore(HighMySQL):
     CHANNEL_TABLE = 'channels'
     COMMENTS_TABLE = 'comments'
 
-    def __init__(self, config: Dict) -> None:
+    def __init__(self, config: Dict, tag: str) -> None:
         """
         The basic constructor. Creates a new instance of Datastore using the specified credentials
         :param config:
+        :param tag:
         """
-
+        global logger
+        logger = ColorLogger(logger_name=f'[{tag}] YoutubeMySqlDatastore', color='red')
         super().__init__(config)
         self.create_tables_if_not_exist()
 

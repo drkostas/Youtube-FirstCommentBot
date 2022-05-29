@@ -14,7 +14,7 @@ import httplib2
 
 from youbot import ColorLogger
 
-logger = ColorLogger('YoutubeApi')
+logger = ColorLogger(logger_name='YoutubeApi', color='green')
 
 
 class AbstractYoutubeApi(ABC):
@@ -45,6 +45,8 @@ class AbstractYoutubeApi(ABC):
 class YoutubeApiV3(AbstractYoutubeApi):
 
     def __init__(self, config: Dict, tag: str):
+        global logger
+        logger = ColorLogger(logger_name=f'[{tag}] YoutubeApi', color='green')
         super().__init__(config, tag)
 
     @staticmethod

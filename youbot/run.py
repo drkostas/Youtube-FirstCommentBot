@@ -101,12 +101,15 @@ def main():
     Example:
         python youbot/run.py -m commenter -c confs/commenter.yml -l logs/commenter.log
     """
+    global logger
 
     # Initializing
     args = get_args()
     ColorLogger.setup_logger(log_path=args.log, debug=args.debug, clear_log=False)
     # Load the configurations
     conf_obj = Configuration(config_src=args.config_file)
+    tag = conf_obj.tag
+    logger = ColorLogger(logger_name=f'[{tag}] Main', color='yellow')
     you_conf = conf_obj.get_config('youtube')[0]
     db_conf = conf_obj.get_config('datastore')[0]
     comments_conf = conf_obj.get_config('comments')[0]
@@ -119,8 +122,8 @@ def main():
     # Setup YouTube API
     youtube = YoutubeManager(config=you_conf['config'],
                              db_conf=db_conf, cloud_conf=cloud_conf, comments_conf=comments_conf,
-                             sleep_time=you_conf['sleep_time'],
-                             max_posted_hours=you_conf['max_posted_hours'],
+                             sleep_time=int(you_conf['sleep_time']),
+                             max_posted_hours=int(you_conf['max_posted_hours']),
                              api_type=you_conf['type'], tag=conf_obj.tag, log_path=args.log)
     # Run in the specified run mode
     func = globals()[args.run_mode]
