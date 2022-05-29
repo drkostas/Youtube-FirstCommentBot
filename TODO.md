@@ -14,7 +14,11 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [X] Ensure code works without dropbox and emailer modules
 - [X] Create the workflow for the accumulator
 - [X] Load yt keys from Dropbox
-- [ ] Add SQL scripts for creating the tables needed
+- [X] Add SQL scripts for creating the tables needed (automatically checks and creates on init)
+- [X] Different YT env vars for each yml
+- [ ] Option to set username manually
+- [ ] Test that everything works properly
+- [ ] Configure Procfile and circleci config
 - [ ] Update Readme
 - [ ] Recreate the Livestreaming module
 - [ ] Use multiple accounts (different api keys) to check for new comments

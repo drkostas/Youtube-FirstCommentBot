@@ -9,15 +9,15 @@ datastore:
     type: mysql
 youtube:
   - config:
-      client_id: !ENV ${CLIENT_ID}
-      client_secret: !ENV ${CLIENT_SECRET}
+      client_id: !ENV ${CLIENT_ID_COMM}
+      client_secret: !ENV ${CLIENT_SECRET_COMM}
       api_version: v3
       read_only_scope: https://www.googleapis.com/auth/youtube.force-ssl
       load_keys_from_cloud: true  # cloudstore config is required
       keys_path: keys
-      sleep_time: !ENV ${SLEEP_TIME}
-      max_posted_hours: !ENV ${MAX_POSTED_HOURS} # max num. of hours to check back for posted videos
-    type: simulated  # normal, simulated
+      sleep_time: !ENV ${SLEEP_TIME_COMM}
+      max_posted_hours: !ENV ${MAX_POSTED_HOURS_COMM} # max num. of hours to check back for posted videos
+    type: normal  # normal, simulated
 comments:
   - config:
       local_folder_name: comments
