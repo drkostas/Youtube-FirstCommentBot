@@ -24,15 +24,18 @@ class YoutubeManager(YoutubeApiV3):
         global logger
         logger = ColorLogger(logger_name=f'[{tag}] YoutubeManager', color='cyan')
         self.db = YoutubeMySqlDatastore(config=db_conf['config'], tag=tag)
-        self.comments_conf = comments_conf['config']
+        self.comments_conf = None
+        if comments_conf is not None:
+            self.comments_conf = comments_conf['config']
         self.dbox = None
         if cloud_conf is not None:
             self.dbox = DropboxCloudManager(config=cloud_conf['config'])
             self.dbox_logs_folder_path = cloud_conf['logs_folder_path']
             self.upload_logs_every = int(cloud_conf['upload_logs_every'])
-        elif self.comments_conf['type'] == 'dropbox':
-            raise YoutubeManagerError("Requested `dropbox` comments type "
-                                      "but `cloudstore` config is not set!")
+        elif self.comments_conf is not None:
+            if self.comments_conf['type'] == 'dropbox':
+                raise YoutubeManagerError("Requested `dropbox` comments type "
+                                          "but `cloudstore` config is not set!")
         self.default_sleep_time = sleep_time
         self.max_posted_hours = max_posted_hours
         self.api_type = api_type
@@ -95,6 +98,41 @@ class YoutubeManager(YoutubeApiV3):
                 error_txt = f"FatalMySQL error while storing comment:\n{e}"
                 logger.error(error_txt)
                 raise e
+
+    def accumulator(self):
+        # Initialize
+        sleep_time = 0
+        while True:
+            try:
+                time.sleep(sleep_time)
+                # Load recent comments
+                recent_commented_links = [comment["video_link"] for comment in
+                                          self.db.get_comments(n_recent=200)]
+                # Get info for recent comments with YT api
+                comments = []
+                exceptions = []
+                for cnt, link in enumerate(recent_commented_links):
+                    try:
+                        comments.extend(self.get_video_comments(link))
+                    except Exception as e:
+                        exceptions.append(e)
+                # Update comment data in the DB
+                for comment_dict in comments:
+                    self.db.update_comment(video_link=comment_dict['url'],
+                                           comment_id=comment_dict['comment_id'],
+                                           like_cnt=comment_dict['like_count'],
+                                           reply_cnt=comment_dict['reply_count'])
+                if len(exceptions) > 0:
+                    logger.error(f"{len(exceptions)} exceptions occurred! "
+                                 f"Will only print  the first one.")
+                    raise exceptions[0]
+            except Exception as e:
+                error_txt = f"Exception in the main loop of the Accumulator:\n{e}"
+                logger.error(error_txt)
+                sleep_time = self.seconds_until_next_hour()
+                logger.error(f"Will sleep until next hour ({sleep_time} seconds)")
+            else:
+                sleep_time = self.default_sleep_time
 
     def get_comments(self, n_recent, channel_ids):
         commented_comments = {}
@@ -175,6 +213,9 @@ class YoutubeManager(YoutubeApiV3):
         self.pretty_print(headers, comments)
 
     def load_template_comments(self):
+        if self.comments_conf is None:
+            raise YoutubeManagerError("Tried to load template comments "
+                                      "but `comments` is not set in the config!")
         # Download files from dropbox
         if self.comments_conf['type'] == 'dropbox':
             # TODO: implement this in the dropbox lib

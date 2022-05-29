@@ -53,7 +53,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
     def _build_api(client_id: str, client_secret: str, api_version: str, read_only_scope: str,
                    tag: str) -> googleapiclient.discovery.Resource:
         """
-        Build a youtube api connection.
+        Build a YouTube api connection.
 
         Args:
             client_id:

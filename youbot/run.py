@@ -66,7 +66,7 @@ def commenter(youtube: YoutubeManager, args: argparse.Namespace) -> None:
 
 
 def accumulator(youtube: YoutubeManager, args: argparse.Namespace) -> None:
-    raise NotImplementedError()
+    youtube.accumulator()
 
 
 def set_priority(youtube: YoutubeManager, args: argparse.Namespace) -> None:
@@ -106,15 +106,19 @@ def main():
     # Initializing
     args = get_args()
     ColorLogger.setup_logger(log_path=args.log, debug=args.debug, clear_log=False)
-    # Load the configurations
+    # Load configurations
     conf_obj = Configuration(config_src=args.config_file)
     tag = conf_obj.tag
-    logger = ColorLogger(logger_name=f'[{tag}] Main', color='yellow')
+    logger = ColorLogger(logger_name=f'[{tag}] Main', color='yellow')  # Reconfigure with the tag
     you_conf = conf_obj.get_config('youtube')[0]
+    sleep_time = int(you_conf['sleep_time'])
+    max_posted_hours = int(you_conf['max_posted_hours']) if 'max_posted_hours' in you_conf else -1
     db_conf = conf_obj.get_config('datastore')[0]
-    comments_conf = conf_obj.get_config('comments')[0]
+    comments_conf = None
+    if 'comments' in conf_obj.config:  # Optional
+        comments_conf = conf_obj.get_config('comments')[0]
     cloud_conf = None
-    if 'cloudstore' in conf_obj.config:
+    if 'cloudstore' in conf_obj.config:  # Optional
         cloud_conf = conf_obj.get_config('cloudstore')[0]
         emailer_conf = None
     if 'emailer' in conf_obj.config:  # Not implemented yet
@@ -122,8 +126,8 @@ def main():
     # Setup YouTube API
     youtube = YoutubeManager(config=you_conf['config'],
                              db_conf=db_conf, cloud_conf=cloud_conf, comments_conf=comments_conf,
-                             sleep_time=int(you_conf['sleep_time']),
-                             max_posted_hours=int(you_conf['max_posted_hours']),
+                             sleep_time=sleep_time,
+                             max_posted_hours=max_posted_hours,
                              api_type=you_conf['type'], tag=conf_obj.tag, log_path=args.log)
     # Run in the specified run mode
     func = globals()[args.run_mode]
