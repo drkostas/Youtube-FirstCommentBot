@@ -11,7 +11,7 @@ from glob import glob
 from youbot import ColorLogger, YoutubeMySqlDatastore, DropboxCloudManager
 from .youtube_api import YoutubeApiV3
 
-logger = ColorLogger('YoutubeManager')
+logger = ColorLogger(logger_name='YoutubeManager', color='cyan')
 
 
 class YoutubeManager(YoutubeApiV3):
@@ -21,13 +21,15 @@ class YoutubeManager(YoutubeApiV3):
     def __init__(self, config: Dict, db_conf: Dict, cloud_conf: Dict, comments_conf: Dict,
                  sleep_time: int, max_posted_hours: int,
                  api_type: str, tag: str, log_path: str):
-        self.db = YoutubeMySqlDatastore(config=db_conf['config'])
+        global logger
+        logger = ColorLogger(logger_name=f'[{tag}] YoutubeManager', color='cyan')
+        self.db = YoutubeMySqlDatastore(config=db_conf['config'], tag=tag)
         self.comments_conf = comments_conf['config']
         self.dbox = None
         if cloud_conf is not None:
             self.dbox = DropboxCloudManager(config=cloud_conf['config'])
             self.dbox_logs_folder_path = cloud_conf['logs_folder_path']
-            self.upload_logs_every = cloud_conf['upload_logs_every']
+            self.upload_logs_every = int(cloud_conf['upload_logs_every'])
         elif self.comments_conf['type'] == 'dropbox':
             raise YoutubeManagerError("Requested `dropbox` comments type "
                                       "but `cloudstore` config is not set!")

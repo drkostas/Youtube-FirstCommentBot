@@ -13,20 +13,20 @@ youtube:
       client_secret: !ENV ${CLIENT_SECRET}
       api_version: v3
       read_only_scope: https://www.googleapis.com/auth/youtube.force-ssl
-    sleep_time: 1
-    max_posted_hours: 250  # max num. of hours to check back for posted videos
+    sleep_time: !ENV ${SLEEP_TIME}
+    max_posted_hours: !ENV ${MAX_POSTED_HOURS} # max num. of hours to check back for posted videos
     type: simulated  # normal, simulated
 comments:
   - config:
       local_folder_name: comments
       dropbox_folder_name: /yt-commenter/comments
-      type: local  # local, dropbox (should set `cloudstore` config), or mysql (not implemented)
-#cloudstore:  # Optional
-#  - config:
-#      api_key: !ENV ${DROPBOX_API_KEY}
-#    logs_folder_path: /yt-commenter/logs
-#    upload_logs_every: 120  # number of loops in commenter()
-#    type: dropbox
+      type: !ENV ${COMMENTS_TYPE}  # local, dropbox (should set `cloudstore` config), or mysql (not implemented)
+cloudstore:  # Optional
+  - config:
+      api_key: !ENV ${DROPBOX_API_KEY}
+    logs_folder_path: /yt-commenter/logs
+    upload_logs_every: !ENV ${UPLOAD_LOGS_EVERY}  # number of loops in commenter()
+    type: dropbox
 #emailer:  # Not implemented yet
 #  - config:
 #      email_address: !ENV ${EMAIL_ADDRESS}
