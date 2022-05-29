@@ -19,8 +19,8 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [X] Option to set username manually
 - [X] Test that everything works properly
 - [X] Configure Procfile and circleci config
-- [ ] Update Readme
-- [ ] Recreate the Livestreaming module
+- [X] Update Readme
 - [ ] Use multiple accounts (different api keys) to check for new comments
 - [ ] Improve the YouTube api functions used (Activities api func - https://developers.google.com/youtube/v3/docs/activities/list)
 - [ ] Send me email on fatal error (on later version)
+- [ ] Recreate the Livestreaming module
