@@ -13,7 +13,7 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [X] \[Merged\] Regularly backup logs files from logs/ to dropbox (for when running on Heroku) + Store errors in sql or dropbox
 - [X] Ensure code works without dropbox and emailer modules
 - [X] Create the workflow for the accumulator
-- [ ] Load yt keys from Dropbox
+- [X] Load yt keys from Dropbox
 - [ ] Add SQL scripts for creating the tables needed
 - [ ] Update Readme
 - [ ] Recreate the Livestreaming module

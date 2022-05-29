@@ -16,7 +16,8 @@ logger = ColorLogger(logger_name='YoutubeManager', color='cyan')
 
 class YoutubeManager(YoutubeApiV3):
     __slots__ = ('db', 'dbox', 'comments_conf', 'default_sleep_time', 'max_posted_hours', 'api_type',
-                 'template_comments', 'log_path', 'upload_logs_every')
+                 'template_comments', 'log_path', 'upload_logs_every', 'keys_path',
+                 'dbox_logs_folder_path', 'dbox_keys_folder_path', 'comments_src')
 
     def __init__(self, config: Dict, db_conf: Dict, cloud_conf: Dict, comments_conf: Dict,
                  sleep_time: int, max_posted_hours: int,
@@ -26,14 +27,18 @@ class YoutubeManager(YoutubeApiV3):
         self.db = YoutubeMySqlDatastore(config=db_conf['config'], tag=tag)
         self.comments_conf = None
         if comments_conf is not None:
+            self.comments_src = comments_conf['type']
             self.comments_conf = comments_conf['config']
         self.dbox = None
         if cloud_conf is not None:
-            self.dbox = DropboxCloudManager(config=cloud_conf['config'])
+            cloud_conf = cloud_conf['config']
+            self.dbox = DropboxCloudManager(config=cloud_conf)
             self.dbox_logs_folder_path = cloud_conf['logs_folder_path']
-            self.upload_logs_every = int(cloud_conf['upload_logs_every'])
+            self.dbox_keys_folder_path = cloud_conf['keys_folder_path']
+            self.upload_logs_every = int(
+                cloud_conf['upload_logs_every']) if 'upload_logs_every' in cloud_conf else 100
         elif self.comments_conf is not None:
-            if self.comments_conf['type'] == 'dropbox':
+            if self.comments_src == 'dropbox':
                 raise YoutubeManagerError("Requested `dropbox` comments type "
                                           "but `cloudstore` config is not set!")
         self.default_sleep_time = sleep_time
@@ -42,7 +47,11 @@ class YoutubeManager(YoutubeApiV3):
         self.template_comments = {}
         if self.api_type == 'simulated':
             self.get_uploads = self.simulate_uploads
+        self.keys_path = config['keys_path']
         self.log_path = log_path
+        if 'load_keys_from_cloud' in config:
+            if config['load_keys_from_cloud'] is True:
+                self.load_keys_from_cloud()
         super().__init__(config, tag)
 
     def commenter(self):
@@ -204,9 +213,9 @@ class YoutubeManager(YoutubeApiV3):
     def list_comments(self, n_recent: int = 50, min_likes: int = -1,
                       min_replies: int = -1) -> None:
 
-        comments = [(row["username"].title(), row["comment"],
+        comments = [[row["username"].title(), row["comment"],
                      arrow.get(row["comment_time"]).humanize(),
-                     row["like_count"], row["reply_count"], row["comment_link"])
+                     row["like_count"], row["reply_count"], row["comment_link"]]
                     for row in self.db.get_comments(n_recent, min_likes, min_replies)]
 
         headers = ['Channel', 'Comment', 'Time', 'Likes', 'Replies', 'Comment URL']
@@ -217,7 +226,7 @@ class YoutubeManager(YoutubeApiV3):
             raise YoutubeManagerError("Tried to load template comments "
                                       "but `comments` is not set in the config!")
         # Download files from dropbox
-        if self.comments_conf['type'] == 'dropbox':
+        if self.comments_src == 'dropbox':
             # TODO: implement this in the dropbox lib
             if not os.path.exists(self.comments_conf["local_folder_name"]):
                 os.makedirs(self.comments_conf["local_folder_name"])
@@ -226,7 +235,7 @@ class YoutubeManager(YoutubeApiV3):
                     self.dbox.download_file(f'{self.comments_conf["dropbox_folder_name"]}/{file}',
                                             f'{self.comments_conf["local_folder_name"]}/{file}')
         # Load comments from files
-        if self.comments_conf['type'] in ('local', 'dropbox'):
+        if self.comments_src in ('local', 'dropbox'):
             base_path = os.path.dirname(os.path.abspath(__file__))
             comments_path = os.path.join(base_path, '../..', self.comments_conf['local_folder_name'],
                                          "*.txt")
@@ -270,6 +279,18 @@ class YoutubeManager(YoutubeApiV3):
             file_to_upload = f.read()
         self.dbox.upload_file(file_bytes=file_to_upload, upload_path=upload_path)
 
+    def load_keys_from_cloud(self):
+        if self.dbox is None:
+            raise YoutubeManagerError("`load_keys_from_cloud` was set to True "
+                                      "but no `cloudstore` config was given!")
+
+        if not os.path.exists(self.keys_path):
+            os.makedirs(self.keys_path)
+        for file in self.dbox.ls(self.dbox_keys_folder_path).keys():
+            if file[-5:] == '.json':
+                self.dbox.download_file(f'{self.dbox_keys_folder_path}/{file}',
+                                        f'{self.keys_path}/{file}')
+
     def simulate_uploads(self, channels: List, max_posted_hours: int = 2) -> Dict:
         """ Generates new uploads for the specified channels.
 
@@ -301,7 +322,7 @@ class YoutubeManager(YoutubeApiV3):
             yield upload
 
     @staticmethod
-    def pretty_print(headers: List[str], data: List[Tuple]):
+    def pretty_print(headers: List[str], data: List[List]):
         """Print the provided header and data in a visually pleasing manner
 
         Args:
