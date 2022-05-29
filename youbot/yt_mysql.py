@@ -39,6 +39,7 @@ class YoutubeMySqlDatastore(HighMySQL):
             video_link   varchar(100)              not null,
             comment      varchar(255)              not null,
             comment_time varchar(100)              not null,
+            upload_time varchar(100)              not null,
             like_count   int          default -1   null,
             reply_count  int          default -1   null,
             comment_id   varchar(100) default '-1' null,
