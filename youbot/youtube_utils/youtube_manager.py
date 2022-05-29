@@ -22,8 +22,15 @@ class YoutubeManager(YoutubeApiV3):
                  sleep_time: int, max_posted_hours: int,
                  api_type: str, tag: str, log_path: str):
         self.db = YoutubeMySqlDatastore(config=db_conf['config'])
-        self.dbox = DropboxCloudManager(config=cloud_conf['config'])
         self.comments_conf = comments_conf['config']
+        self.dbox = None
+        if cloud_conf is not None:
+            self.dbox = DropboxCloudManager(config=cloud_conf['config'])
+            self.dbox_logs_folder_path = cloud_conf['logs_folder_path']
+            self.upload_logs_every = cloud_conf['upload_logs_every']
+        elif self.comments_conf['type'] == 'dropbox':
+            raise YoutubeManagerError("Requested `dropbox` comments type "
+                                      "but `cloudstore` config is not set!")
         self.default_sleep_time = sleep_time
         self.max_posted_hours = max_posted_hours
         self.api_type = api_type
@@ -31,8 +38,6 @@ class YoutubeManager(YoutubeApiV3):
         if self.api_type == 'simulated':
             self.get_uploads = self.simulate_uploads
         self.log_path = log_path
-        self.dbox_logs_folder_path = cloud_conf['logs_folder_path']
-        self.upload_logs_every = cloud_conf['upload_logs_every']
         super().__init__(config, tag)
 
     def commenter(self):
@@ -43,10 +48,11 @@ class YoutubeManager(YoutubeApiV3):
         while True:
             time.sleep(sleep_time)
             # Log upload handling
-            loop_cnt += 1
-            if loop_cnt > self.upload_logs_every:
-                self.upload_logs()
-                loop_cnt = 0
+            if self.dbox is not None:
+                loop_cnt += 1
+                if loop_cnt > self.upload_logs_every:
+                    self.upload_logs()
+                    loop_cnt = 0
             # Load necessary data
             self.load_template_comments()
             channel_ids = [channel['channel_id'] for channel in
@@ -72,7 +78,8 @@ class YoutubeManager(YoutubeApiV3):
                         comments_added.append((video, video_url, comment_text,
                                                datetime.utcnow().isoformat()))
             except Exception as e:
-                logger.error(f"Exception in the main loop of the Commenter:\n{e}")
+                error_txt = f"Exception in the main loop of the Commenter:\n{e}"
+                logger.error(error_txt)
                 sleep_time = self.seconds_until_next_hour()
                 logger.error(f"Will sleep until next hour ({sleep_time} seconds)")
             else:
@@ -83,7 +90,8 @@ class YoutubeManager(YoutubeApiV3):
                     self.db.add_comment(video["channel_id"], video_link=video_url,
                                         comment_text=comment_text, upload_time=video["published_at"])
             except Exception as e:
-                logger.error(f"MySQL error while storing comment:\n{e}")
+                error_txt = f"FatalMySQL error while storing comment:\n{e}"
+                logger.error(error_txt)
                 raise e
 
     def get_comments(self, n_recent, channel_ids):

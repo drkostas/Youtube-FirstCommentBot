@@ -109,8 +109,13 @@ def main():
     conf_obj = Configuration(config_src=args.config_file)
     you_conf = conf_obj.get_config('youtube')[0]
     db_conf = conf_obj.get_config('datastore')[0]
-    cloud_conf = conf_obj.get_config('cloudstore')[0]
     comments_conf = conf_obj.get_config('comments')[0]
+    cloud_conf = None
+    if 'cloudstore' in conf_obj.config:
+        cloud_conf = conf_obj.get_config('cloudstore')[0]
+        emailer_conf = None
+    if 'emailer' in conf_obj.config:  # Not implemented yet
+        emailer_conf = conf_obj.get_config('emailer')[0]
     # Setup YouTube API
     youtube = YoutubeManager(config=you_conf['config'],
                              db_conf=db_conf, cloud_conf=cloud_conf, comments_conf=comments_conf,

@@ -11,9 +11,10 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [X] Roll the comments for each channel - store comments in sql table?
 - [X] Store comments in dropbox
 - [X] \[Merged\] Regularly backup logs files from logs/ to dropbox (for when running on Heroku) + Store errors in sql or dropbox
-- [ ] Send me email on fatal error
-- [ ] Create the workflow for the accumulator
+- [X] Ensure code works without dropbox and emailer modules
 - [ ] Add SQL scripts for creating the tables needed
+- [ ] Create the workflow for the accumulator
 - [ ] Recreate the Livestreaming module
-- [ ] Improve the YouTube api functions used (Activities api func - https://developers.google.com/youtube/v3/docs/activities/list)
 - [ ] Use multiple accounts (different api keys) to check for new comments
+- [ ] Improve the YouTube api functions used (Activities api func - https://developers.google.com/youtube/v3/docs/activities/list)
+- [ ] Send me email on fatal error (on later version)
