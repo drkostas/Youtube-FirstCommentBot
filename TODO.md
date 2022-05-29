@@ -10,7 +10,7 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [X] Create the workflow for the commenter
 - [X] Roll the comments for each channel - store comments in sql table?
 - [ ] Store comments in dropbox
-- [ ] Create table with errors
+- [ ] Store errors in sql or dropbox
 - [ ] Create the workflow for the accumulator
 - [ ] Add SQL scripts for creating the tables needed
 - [ ] Send me email on fatal error

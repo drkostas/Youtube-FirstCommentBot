@@ -27,5 +27,6 @@ youtube:
     type: simulated  # normal, simulated
 comments:
   - config:
-      folder_name: comments
-      type: local  # local, dropbox, or mysql
+      local_folder_name: comments
+      dropbox_folder_name: /yt-commenter/comments
+      type: dropbox  # local, dropbox, or mysql

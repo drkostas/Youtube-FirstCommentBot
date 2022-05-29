@@ -8,20 +8,21 @@ import string
 import os
 from glob import glob
 
-from youbot import ColorLogger, YoutubeMySqlDatastore
+from youbot import ColorLogger, YoutubeMySqlDatastore, DropboxCloudManager
 from .youtube_api import YoutubeApiV3
 
 logger = ColorLogger('YoutubeManager')
 
 
 class YoutubeManager(YoutubeApiV3):
-    __slots__ = ('db', 'comments_conf', 'default_sleep_time', 'max_posted_hours', 'api_type',
+    __slots__ = ('db', 'dbox', 'comments_conf', 'default_sleep_time', 'max_posted_hours', 'api_type',
                  'template_comments')
 
-    def __init__(self, config: Dict, db_conf: Dict, comments_conf: Dict,
+    def __init__(self, config: Dict, db_conf: Dict, cloud_conf: Dict, comments_conf: Dict,
                  sleep_time: int, max_posted_hours: int,
                  api_type: str, tag: str):
         self.db = YoutubeMySqlDatastore(config=db_conf['config'])
+        self.dbox = DropboxCloudManager(config=cloud_conf['config'])
         self.comments_conf = comments_conf['config']
         self.default_sleep_time = sleep_time
         self.max_posted_hours = max_posted_hours
@@ -154,9 +155,19 @@ class YoutubeManager(YoutubeApiV3):
         self.pretty_print(headers, comments)
 
     def load_template_comments(self):
-        if self.comments_conf['type'] == 'local':
+        # Download files from dropbox
+        if self.comments_conf['type'] == 'dropbox':
+            # TODO: implement this in the dropbox lib
+            if not os.path.exists(self.comments_conf["local_folder_name"]):
+                os.makedirs(self.comments_conf["local_folder_name"])
+            for file in self.dbox.ls(self.comments_conf['dropbox_folder_name']).keys():
+                if file[-4:] == '.txt':
+                    self.dbox.download_file(f'{self.comments_conf["dropbox_folder_name"]}/{file}',
+                                            f'{self.comments_conf["local_folder_name"]}/{file}')
+        # Load comments from files
+        if self.comments_conf['type'] in ('local', 'dropbox'):
             base_path = os.path.dirname(os.path.abspath(__file__))
-            comments_path = os.path.join(base_path, '../..', self.comments_conf['folder_name'],
+            comments_path = os.path.join(base_path, '../..', self.comments_conf['local_folder_name'],
                                          "*.txt")
             for file in glob(comments_path):
                 file_name = file.split('/')[-1][:-4]
