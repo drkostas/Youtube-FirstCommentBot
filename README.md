@@ -28,7 +28,7 @@
 
 A bot that leaves the first comment on every new video of specified channels.
 
-<b>DISCLAIMER: This project is built for educational purposes. DO NOT use it to create spam-bots.<b>
+<b><u>DISCLAIMER: This project is built for educational purposes. DO NOT use it to create spam-bots.</u><b>
 
 Current modules:
 
@@ -39,7 +39,7 @@ Current modules:
 - List Comments: It lists all the Comments posted by the bot
 - Add Channel: It adds a new channel to the following list
 - Set Priority: It set the comment priority of a specified channel
-- Refresh Photo: It gathers and populates the `channels` table in the DB with urls to the Channels'
+- Refresh Photo: It gathers and populates the `channels` table in the DB with URLs to the Channels'
   profile photos
 
 ## Getting Started <a name = "getting_started"></a>
@@ -62,8 +62,8 @@ $ echo $SHELL
 
 ```
 
-This project requires a MySQL database and a YouTube Api key. Optionally, you can also set up a Dropbox
-Api key which is very useful for when you use Heroku to deploy the bot.
+This project requires a MySQL database and a YouTube API key. Optionally, you can also set up a Dropbox
+API key which is very useful when you use Heroku to deploy the bot.
 
 References:
 
@@ -81,7 +81,7 @@ References:
 - MySQL: If you don't ha DB already, you can create one for free with Amazon RDS:
   [Reference 1](https://aws.amazon.com/rds/free/),
   [Reference 2](https://bigdataenthusiast.wordpress.com/2016/03/05/aws-rds-instance-setup-oracle-db-on-cloud-free-tier/)
-- Dropbox: How to set up an Api key for your Dropbox account:
+- Dropbox: How to set up an API key for your Dropbox account:
   [Reference 1](http://99rabbits.com/get-dropbox-access-token/),
   [Reference 2](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)
 
@@ -92,12 +92,12 @@ and preparing the DB tables.
 
 ### Install the requirements <a name = "install"></a>
 
-All the installation steps are being handled by the [Makefile](Makefile). By default, it uses `conda`
+All the installation steps are handled by the [Makefile](Makefile). By default, it uses `conda`
 environments. If you want to use `virtualenv` instead, append to every `make` command the flag:
 `env=venv`. If you want to modify the name of the environment or use another python version, modify the
 first lines of the [Makefile](Makefile).
 
-Deactivate and active conda environment, install the requirements and load the newly created
+Deactivate and active Conda environment, install the requirements and load the newly created
 environment:
 
 ```ShellSession
@@ -108,7 +108,7 @@ $ conda activate youbot
 
 ### Create the config files <a name = "configs"></a>
 
-The project uses YML config file along with command line arguments. There are three configs I am using:
+The project uses YML config files along with command-line arguments. There are three configs I am using:
 
 - [generic.yml](confs/generic.yml): Used for running the following commands:
     - list_channels
@@ -119,7 +119,7 @@ The project uses YML config file along with command line arguments. There are th
 - [commenter.yml](confs/commenter.yml): Used to run the `commenter` command
 - [accumulator.yml](confs/accumulator.yml): Used to run the `accumulator` command
 
-I am not going to go into depth for each available setting because you can use the three yml files as
+I am not going to go into depth for each available setting because you can use the three YML files as
 templates. The only thing that should be mentioned is that I am using environmental variables to set
 most of the values. For example: `db_name: !ENV ${MYSQL_DB_NAME}`. You can replace
 the `!ENV ${MYSQL_DB_NAME}`
@@ -129,16 +129,16 @@ variables check [these instructions](https://pypi.org/project/yaml-config-wrappe
 ### Specify the pool of comments <a name = "comments_pool"></a>
 
 Now, you don't want the bot to post the same comment over and over again. For that reason, I am using a
-pool of available comments, and bot automatically picks one that hasn't been commented to the
-respective channel yet, otherwise it picks the one that was posted the longest time ago. Just create
+pool of available comments, and the bot automatically picks one that hasn't been commented on to the
+respective channel yet, otherwise, it picks the one that was posted the longest time ago. Just create
 a `default.txt` file in a folder named `comments` and write one comment per line. If, for a specific
 channel, you want to have additional comments, create another txt file named after the channel's id.
-For example you can create a `UC-ImLFXGIe2FC4Wo5hOodnw.txt` for the Veritasium YT channel.
+For example, you can create a `UC-ImLFXGIe2FC4Wo5hOodnw.txt` for the Veritasium YT channel.
 
 ### Start following channels <a name = "add_channels"></a>
 
 We are now ready to add YT channels to our following list (stored in the DB). After ensuring you are in
-the conda environment, use the following command to add channels:
+the Conda environment, use the following command to add channels:
 
 Using the channel ID
 
@@ -202,11 +202,11 @@ python youbot/run.py -c confs/accumulator.yml -l logs/accumulator.log -m accumul
 ## Using Dropbox <a name = "dropbox"></a>
 
 There is the option to also incorporate dropbox in the whole pipeline. Assuming you already created an
-Api key and added a cloudstore section in the config, you can use the following options:
+API key and added a cloudstore section in the config, you can use the following options:
 
 - `load_keys_from_cloud: true` (under youtube config): If set to true, the bot will automatically copy
-  the json keys from the defined `keys_folder_path` setting (in cloudstore config) to the defined
-  `keys` setting (in youtube config). This is very useful if you deploy the bot to heroku which is
+  the JSON keys from the defined `keys_folder_path` setting (in cloudstore config) to the defined
+  `keys` setting (in youtube config). This is very useful if you deploy the bot to Heroku which is
   stateless and any newly created file can be deleted anytime. So you may have to manually recreate the
   keys.
 - `upload_logs_every: 15` (under cloudstore config): If you configured the cloudstore config for the
@@ -220,7 +220,7 @@ Api key and added a cloudstore section in the config, you can use the following 
 
 ## Deployment on Heroku <a name = "heroku"></a>
 
-The deployment is being done to <b>Heroku</b>. For more information you can check
+The deployment is being done to <b>Heroku</b>. For more information, you can check
 the [setup guide](https://devcenter.heroku.com/articles/getting-started-with-python).
 
 Make sure you check the defined [Procfile](Procfile)
@@ -230,7 +230,7 @@ and that you set the appropriate environmental variables
 
 ## Continuous Integration <a name = "ci"></a>
 
-For the continuous integration, the <b>CircleCI</b> service is being used. For more information you can
+For the continuous integration, the <b>CircleCI</b> service is being used. For more information, you can
 check the [setup guide](https://circleci.com/docs/2.0/language-python/).
 
 Again, you should set the appropriate environmental variables 
