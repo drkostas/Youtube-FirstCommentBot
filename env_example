@@ -1,0 +1,8 @@
+# You should create a new file with ".env" name or something similar and NOT include it in your git
+export DROPBOX_API_KEY=123
+export MYSQL_HOST=foo.rds.amazonaws.com
+export MYSQL_USERNAME=user
+export MYSQL_PASSWORD=pass
+export MYSQL_DB_NAME=Test_schema
+export EMAIL_ADDRESS=Gmail Bot <foobar@gmail.com>
+export GMAIL_API_KEY=123

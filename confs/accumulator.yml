@@ -1,0 +1,27 @@
+tag: accumulator
+datastore:
+  - config:
+      hostname: !ENV ${MYSQL_HOST}
+      username: !ENV ${MYSQL_USERNAME}
+      password: !ENV ${MYSQL_PASSWORD}
+      db_name: !ENV ${MYSQL_DB_NAME}
+      port: 3306
+    type: mysql
+youtube:
+  - config:
+      client_id: !ENV ${CLIENT_ID_ACC}
+      client_secret: !ENV ${CLIENT_SECRET_ACC}
+      api_version: v3
+      read_only_scope: https://www.googleapis.com/auth/youtube.force-ssl
+      username: !ENV ${USERNAME_ACC}  # Can be omitted (automatically derived)
+      comment_search_term: !ENV ${SEARCH_TERM_ACC}  # Can be omitted (username will be used instead - sometimes doesn't work)
+      sleep_time: !ENV ${SLEEP_TIME_ACC}
+      load_keys_from_cloud: true  # cloudstore config is required
+      keys_path: keys
+    type: normal  # normal, simulated
+cloudstore:  # Optional
+  - config:
+      api_key: !ENV ${DROPBOX_API_KEY}
+      logs_folder_path: /yt-commenter/logs
+      keys_folder_path: /yt-commenter/keys
+    type: dropbox
