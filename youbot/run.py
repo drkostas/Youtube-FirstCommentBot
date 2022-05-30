@@ -29,7 +29,7 @@ def get_args() -> argparse.Namespace:
     optional_args = parser.add_argument_group('Optional Arguments')
     commands = ['commenter', 'accumulator',
                 'add_channel', 'remove_channel', 'list_channels', 'list_comments',
-                'refresh_photos', 'set_priority']
+                'refresh_photos', 'set_priority', 'fill_upload_times']
     optional_args.add_argument('-m', '--run-mode', choices=commands,
                                default=commands[0],
                                help='Description of the run modes')
@@ -84,6 +84,16 @@ def remove_channel(youtube: YoutubeManager, args: argparse.Namespace) -> None:
 
 def list_channels(youtube: YoutubeManager, args: argparse.Namespace) -> None:
     youtube.list_channels()
+
+
+def fill_upload_times(youtube: YoutubeManager, args: argparse.Namespace) -> None:
+    video_ids = [row['video_link'].split("?v=")[-1]
+                 for row in youtube.db.get_comments(args.n_recent, args.min_likes, args.min_replies,
+                                                    only_null_upload=True)]
+    for video in youtube.get_videos_upload_times(videos=video_ids):
+        video_link = f"https://youtube.com/watch?v={video['video_id']}"
+        youtube.db.update_comment(video_link=video_link,
+                                  upload_time=video['upload_time'])
 
 
 def list_comments(youtube: YoutubeManager, args: argparse.Namespace) -> None:
