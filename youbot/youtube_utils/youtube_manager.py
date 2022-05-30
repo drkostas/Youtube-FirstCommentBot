@@ -237,13 +237,24 @@ class YoutubeManager(YoutubeApiV3):
     def list_comments(self, n_recent: int = 50, min_likes: int = -1,
                       min_replies: int = -1) -> None:
 
-        comments = [[row["username"].title(), row["comment"],
-                     arrow.get(row["comment_time"]).humanize(),
-                     row["like_count"], row["reply_count"], row["comment_link"]]
-                    for row in self.db.get_comments(n_recent, min_likes, min_replies)]
+        comments = []
+        for row in self.db.get_comments(n_recent, min_likes, min_replies):
+            username = row["username"].title()
+            comment_time = arrow.get(row["comment_time"]).humanize()
+            if row["upload_time"] != "-1":
+                upload_seconds_passed = int(
+                    arrow.get(row["upload_time"]).humanize(granularity='second').split(" ")[0])
+                comment_seconds_passed = int(
+                    arrow.get(row["comment_time"]).humanize(granularity='second').split(" ")[0])
+                late = upload_seconds_passed - comment_seconds_passed
+            else:
+                late = -1
+            comments.append([username, row["comment"], comment_time,
+                             late, row["like_count"], row["reply_count"], row["comment_link"]])
 
-        headers = ['Channel', 'Comment', 'Time', 'Likes', 'Replies', 'Comment URL']
-        self.pretty_print(headers, comments)
+            headers = ['Channel', 'Comment', 'Comment Time', 'Seconds Late', 'Likes', 'Replies',
+                       'Comment URL']
+            self.pretty_print(headers, comments)
 
     def load_template_comments(self):
         if self.comments_conf is None:
@@ -297,7 +308,8 @@ class YoutubeManager(YoutubeApiV3):
     def upload_logs(self):
         log_name = self.log_path.split(os.sep)[-1][:-4]
         day = datetime.today().day
-        log_name += f'_day{day}.txt'
+        hour = datetime.today().hour
+        log_name += f'_day{day}_hour{hour}.txt'
         upload_path = os.path.join(self.dbox_logs_folder_path, log_name)
         with open(self.log_path, 'rb') as f:
             file_to_upload = f.read()

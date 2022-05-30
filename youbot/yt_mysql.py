@@ -210,7 +210,8 @@ class YoutubeMySqlDatastore(HighMySQL):
         """
         self.select_from_table(self.COMMENTS_TABLE)
 
-        comment_cols = 'video_link, comment, comment_time, like_count, reply_count, comment_link'
+        comment_cols = 'video_link, comment, comment_time, upload_time, ' \
+                       'like_count, reply_count, comment_link'
         channel_cols = 'username, channel_id, channel_photo'
         where = f'l.like_count>={min_likes} AND l.reply_count>={min_replies} '
         if channel_id:
@@ -340,9 +341,10 @@ class YoutubeMySqlDatastore(HighMySQL):
         channel['video_link'] = row[0]
         channel['comment'] = row[1]
         channel['comment_time'] = row[2]
-        channel['like_count'] = row[3]
-        channel['reply_count'] = row[4]
-        channel['comment_link'] = row[5]
-        channel['username'] = row[6]
-        channel['channel_photo'] = row[7]
+        channel['upload_time'] = row[3]
+        channel['like_count'] = row[4]
+        channel['reply_count'] = row[5]
+        channel['comment_link'] = row[6]
+        channel['username'] = row[7]
+        channel['channel_photo'] = row[8]
         return channel
