@@ -87,6 +87,7 @@ def list_channels(youtube: YoutubeManager, args: argparse.Namespace) -> None:
 
 
 def fill_upload_times(youtube: YoutubeManager, args: argparse.Namespace) -> None:
+    # TODO: Transfer this inside youtube manger
     video_ids = [row['video_link'].split("?v=")[-1]
                  for row in youtube.db.get_comments(args.n_recent, args.min_likes, args.min_replies,
                                                     only_null_upload=True)]

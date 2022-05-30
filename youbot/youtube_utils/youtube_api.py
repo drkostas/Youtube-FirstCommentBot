@@ -180,7 +180,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
             url:
             search_terms:
         """
-
+        # TODO: Make it more efficient by checking 50 comments at a time
         if not search_terms:
             search_terms = self.channel_name
         video_id = re.search(r"^.*(youtu\.be\/|vi?\/|u\/\w\/|embed\/|\?vi?=|\&vi?=)([^#\&\?]*).*",

@@ -201,7 +201,8 @@ class YoutubeMySqlDatastore(HighMySQL):
 
     def get_comments(self, n_recent: int = 50, min_likes: int = -1,
                      min_replies: int = -1, channel_id: str = None,
-                     only_null_upload: bool = False) -> List[Dict]:
+                     only_null_upload: bool = False,
+                     only_null_comment_id: bool = False) -> List[Dict]:
         """
         Get the latest n_recent comments from the comments table.
         Args:
@@ -210,17 +211,20 @@ class YoutubeMySqlDatastore(HighMySQL):
             min_replies:
             channel_id:
             only_null_upload:
+            only_null_comment_id:
         """
         self.select_from_table(self.COMMENTS_TABLE)
 
         comment_cols = 'video_link, comment, comment_time, upload_time, ' \
-                       'like_count, reply_count, comment_link'
+                       'like_count, reply_count, comment_link, comment_id'
         channel_cols = 'username, channel_id, channel_photo'
         where = f'l.like_count>={min_likes} AND l.reply_count>={min_replies} '
         if channel_id:
-            where += f"AND l.channel_id='{channel_id}'"
+            where += f"AND l.channel_id='{channel_id}' "
         if only_null_upload:
-            where += "AND l.upload_time='-1'"
+            where += "AND (l.upload_time='None' OR l.upload_time='-1') "
+        if only_null_comment_id:
+            where += "AND (l.comment_id='None' OR l.comment_id='-1') "
         for comment in self.select_join(left_table=self.COMMENTS_TABLE,
                                         right_table=self.CHANNEL_TABLE,
                                         left_columns=comment_cols,
@@ -253,15 +257,15 @@ class YoutubeMySqlDatastore(HighMySQL):
         set_data = {}
         if comment_link is not None:
             set_data['comment_link'] = comment_link
-        if comment_link is not None:
+        if video_id is not None:
             set_data['video_id'] = video_id
-        if comment_link is not None:
+        if comment_id is not None:
             set_data['comment_id'] = comment_id
-        if comment_link is not None:
+        if like_cnt is not None:
             set_data['like_count'] = like_cnt
-        if comment_link is not None:
+        if reply_cnt is not None:
             set_data['reply_count'] = reply_cnt
-        if comment_link is not None:
+        if upload_time is not None:
             set_data['upload_time'] = upload_time
         # Execute the update command
         self.update_table(table=self.COMMENTS_TABLE,
