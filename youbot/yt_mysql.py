@@ -54,8 +54,17 @@ class YoutubeMySqlDatastore(HighMySQL):
 
     def get_channels(self) -> List[Dict]:
         """ Retrieve all channels from the database. """
-
-        result = self.select_from_table(table=self.CHANNEL_TABLE, order_by='priority')
+        comment_cols = 'video_link, comment, comment_time, upload_time, ' \
+                       'like_count, reply_count, comment_link, comment_id'
+        channel_cols = 'username'
+        result = self.select_join(left_table=self.CHANNEL_TABLE,
+                                  right_table=self.COMMENTS_TABLE,
+                                  left_columns=channel_cols,
+                                  right_columns=comment_cols,
+                                  join_key_left='channel_id',
+                                  join_key_right='channel_id',
+                                  order_by='l.priority',
+                                  asc_or_desc='desc')
         for row in result:
             yield self._table_row_to_channel_dict(row, )
 
@@ -363,6 +372,6 @@ class YoutubeMySqlDatastore(HighMySQL):
         channel['like_count'] = row[4]
         channel['reply_count'] = row[5]
         channel['comment_link'] = row[6]
-        channel['username'] = row[7]
-        channel['channel_photo'] = row[8]
+        channel['channel_id'] = row[7]
+        channel['username'] = row[8]
         return channel
