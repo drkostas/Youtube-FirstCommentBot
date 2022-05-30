@@ -180,6 +180,15 @@ class YoutubeManager(YoutubeApiV3):
                                       commented_comments[channel_id]]
         return commented_comments, video_links_commented
 
+    def fill_upload_times(self, n_recent, min_likes, min_replies):
+        video_ids = [row['video_link'].split("?v=")[-1]
+                     for row in self.db.get_comments(n_recent, min_likes, min_replies,
+                                                     only_null_upload=True)]
+        for video in self.get_videos_upload_times(videos=video_ids):
+            video_link = f"https://youtube.com/watch?v={video['video_id']}"
+            self.db.update_comment(video_link=video_link,
+                                   upload_time=video['upload_time'])
+
     def add_channel(self, channel_id: str = None, username: str = None) -> None:
         if channel_id:
             channel_info = self.get_channel_info_by_id(channel_id)
