@@ -144,5 +144,6 @@ dmypy.json
 *.zip
 *.7z
 
-# keys
+# Custom
 /keys/*.json
+.crashed

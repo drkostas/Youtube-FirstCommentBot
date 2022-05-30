@@ -18,7 +18,7 @@ class YoutubeManager(YoutubeApiV3):
     __slots__ = ('db', 'dbox', 'comments_conf', 'default_sleep_time', 'max_posted_hours', 'api_type',
                  'template_comments', 'log_path', 'upload_logs_every', 'keys_path',
                  'dbox_logs_folder_path', 'dbox_keys_folder_path', 'comments_src',
-                 'comment_search_term')
+                 'comment_search_term', 'crashed_file')
 
     def __init__(self, config: Dict, db_conf: Dict, cloud_conf: Dict, comments_conf: Dict,
                  sleep_time: int, max_posted_hours: int,
@@ -46,6 +46,8 @@ class YoutubeManager(YoutubeApiV3):
         self.max_posted_hours = max_posted_hours
         self.api_type = api_type
         self.template_comments = {}
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        self.crashed_file = os.path.join(base_path, '../../.crashed')
         if self.api_type == 'simulated':
             self.get_uploads = self.simulate_uploads
         self.keys_path = config['keys_path']
@@ -61,6 +63,9 @@ class YoutubeManager(YoutubeApiV3):
             self.channel_name = config['username']
 
     def commenter(self):
+        if os.path.exists(self.crashed_file):
+            raise YoutubeManagerError("Crashed flag has been raised. Fix the error and delete "
+                                      "the .crashed file manually before restarting the code.")
         # Initialize
         sleep_time = 0
         loop_cnt = 0
@@ -93,7 +98,7 @@ class YoutubeManager(YoutubeApiV3):
                         comment_text = \
                             self.get_next_template_comment(channel_id=video["channel_id"],
                                                            commented_comments=commented_comments)
-                        self.comment(video_id=video["id"], comment_text=comment_text)
+                        # self.comment(video_id=video["id"], comment_text=comment_text)
                         # Add the info of the new comment to be added in the DB after this loop
                         comments_added.append((video, video_url, comment_text,
                                                datetime.utcnow().isoformat()))
@@ -107,12 +112,16 @@ class YoutubeManager(YoutubeApiV3):
             # Save the new comments added in the DB
             try:
                 for (video, video_url, comment_text, comment_time) in comments_added:
-                    self.db.add_comment(video["channel_id"], video_link=video_url,
-                                        comment_text=comment_text, upload_time=video["published_at"])
+                    self.db.add_comment(video["channel_id"],
+                                        video_link=video_url,
+                                        comment_text=comment_text,
+                                        upload_time=video["published_at"])
                     logger.info(f"Comment Added to Channel: {video['channel_id']} ({video_url})")
             except Exception as e:
                 error_txt = f"FatalMySQL error while storing comment:\n{e}"
                 logger.error(error_txt)
+                # Create file that prevents restarting
+                self.touch(self.crashed_file)
                 raise e
 
     def accumulator(self):
@@ -369,6 +378,13 @@ class YoutubeManager(YoutubeApiV3):
         now = datetime.now()
         next_hour = (now + delta).replace(microsecond=0, second=0, minute=2)
         return (next_hour - now).seconds
+
+    @staticmethod
+    def touch(fname, mode=0o666, dir_fd=None, **kwargs):
+        flags = os.O_CREAT | os.O_APPEND
+        with os.fdopen(os.open(fname, flags=flags, mode=mode, dir_fd=dir_fd)) as f:
+            os.utime(f.fileno() if os.utime in os.supports_fd else fname,
+                     dir_fd=None if os.supports_fd else dir_fd, **kwargs)
 
 
 class YoutubeManagerError(Exception):
