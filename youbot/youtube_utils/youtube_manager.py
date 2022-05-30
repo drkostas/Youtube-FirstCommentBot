@@ -117,7 +117,10 @@ class YoutubeManager(YoutubeApiV3):
                     self.upload_logs()
                     loop_cnt = 0
             else:
-                sleep_time = self.default_sleep_time
+                if datetime.today().minute >= 59 or datetime.today().minute <= 0:
+                    sleep_time = 1  # check every second when close to new hour
+                else:
+                    sleep_time = self.default_sleep_time
             # Save the new comments added in the DB
             try:
                 for (video, video_url, comment_text, comment_time) in comments_added:
