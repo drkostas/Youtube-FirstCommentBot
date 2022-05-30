@@ -196,7 +196,8 @@ class YoutubeApiV3(AbstractYoutubeApi):
         comments = []
         for comment_thread in comment_threads_response['items']:
             try:
-                channel_name = comment_thread['snippet']['topLevelComment']['snippet']['authorDisplayName']
+                channel_name = comment_thread['snippet']['topLevelComment']['snippet'][
+                    'authorDisplayName']
                 if channel_name == self.channel_name:
                     current_comment = {"url": url, "video_id": video_id,
                                        "comment_id": comment_thread['id'],
@@ -242,6 +243,25 @@ class YoutubeApiV3(AbstractYoutubeApi):
                 (profile_picture["id"], profile_picture["snippet"]["thumbnails"]["default"]["url"]))
 
         return profile_pictures_result
+
+    def get_videos_upload_times(self, videos: List):
+        videos_lists = self.split_list(videos, 50)
+        videos_found = []
+        # Get the Playlist IDs of each channel
+        for videos in videos_lists:
+            channels_response = self._api.videos().list(
+                id=",".join(videos),
+                part="contentDetails,snippet",
+                fields="items(id,snippet(channelId,publishedAt))"
+            ).execute()
+            videos_found.extend(channels_response["items"])
+
+        for video in videos_found:
+            video_id = video['id']
+            channel_id = video['snippet']['channelId']
+            upload_time = video['snippet']['publishedAt']
+            yield {'video_id': video_id, 'channel_id': channel_id, 'upload_time': upload_time}
+
 
     @staticmethod
     def _yt_to_channel_dict(response: Dict) -> Union[Dict, None]:
