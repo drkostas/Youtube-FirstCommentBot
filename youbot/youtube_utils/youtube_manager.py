@@ -145,6 +145,7 @@ class YoutubeManager(YoutubeApiV3):
                 # Get info for recent comments with YT api
                 comments = []
                 exceptions = []
+                cnt = 0
                 for cnt, link in enumerate(recent_commented_links):
                     try:
                         comments.extend(self.get_video_comments(url=link,
@@ -157,7 +158,7 @@ class YoutubeManager(YoutubeApiV3):
                                            comment_id=comment_dict['comment_id'],
                                            like_cnt=comment_dict['like_count'],
                                            reply_cnt=comment_dict['reply_count'])
-                if len(exceptions) > 0:
+                if len(exceptions) > cnt / 2 and cnt > 0:
                     logger.error(f"{len(exceptions)} exceptions occurred! "
                                  f"Will only print  the first one.")
                     raise exceptions[0]
@@ -243,7 +244,7 @@ class YoutubeManager(YoutubeApiV3):
         for row in self.db.get_comments(n_recent, min_likes, min_replies):
             username = row["username"].title()
             comment_time = arrow.get(row["comment_time"]).humanize()
-            if row["upload_time"] != "-1":
+            if row["upload_time"] != "-1" and row["upload_time"] != "None":
                 upload_seconds_passed = int(
                     arrow.get(row["upload_time"]).humanize(granularity='second').split(" ")[0])
                 comment_seconds_passed = int(
