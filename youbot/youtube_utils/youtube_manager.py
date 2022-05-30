@@ -98,7 +98,7 @@ class YoutubeManager(YoutubeApiV3):
                         comment_text = \
                             self.get_next_template_comment(channel_id=video["channel_id"],
                                                            commented_comments=commented_comments)
-                        # self.comment(video_id=video["id"], comment_text=comment_text)
+                        self.comment(video_id=video["id"], comment_text=comment_text)
                         # Add the info of the new comment to be added in the DB after this loop
                         comments_added.append((video, video_url, comment_text,
                                                datetime.utcnow().isoformat()))
