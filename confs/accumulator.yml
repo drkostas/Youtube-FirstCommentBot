@@ -16,6 +16,7 @@ youtube:
       username: !ENV ${USERNAME_ACC}  # Can be omitted (automatically derived)
       comment_search_term: !ENV ${SEARCH_TERM_ACC}  # Can be omitted (username will be used instead - sometimes doesn't work)
       sleep_time: !ENV ${SLEEP_TIME_ACC}
+      num_comments_to_check: !ENV ${NUM_COMMENTS_ACC}
       load_keys_from_cloud: true  # cloudstore config is required
       keys_path: keys
     type: normal  # normal, simulated

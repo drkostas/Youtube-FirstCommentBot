@@ -195,15 +195,19 @@ class YoutubeApiV3(AbstractYoutubeApi):
 
         comments = []
         for comment_thread in comment_threads_response['items']:
-            channel_name = comment_thread['snippet']['topLevelComment']['snippet']['authorDisplayName']
-            if channel_name == self.channel_name:
-                current_comment = {"url": url, "video_id": video_id,
-                                   "comment_id": comment_thread['id'],
-                                   "like_count":
-                                       comment_thread['snippet']['topLevelComment']['snippet'][
-                                           'likeCount'],
-                                   "reply_count": comment_thread['snippet']['totalReplyCount']}
-                comments.append(current_comment)
+            try:
+                channel_name = comment_thread['snippet']['topLevelComment']['snippet']['authorDisplayName']
+                if channel_name == self.channel_name:
+                    current_comment = {"url": url, "video_id": video_id,
+                                       "comment_id": comment_thread['id'],
+                                       "like_count":
+                                           comment_thread['snippet']['topLevelComment']['snippet'][
+                                               'likeCount'],
+                                       "reply_count": comment_thread['snippet']['totalReplyCount']}
+                    comments.append(current_comment)
+            except Exception as e:
+                logger.error(f"Exception in get_video_comments() for {comment_thread}.")
+                logger.error(f"{e}")
 
         return comments
 
