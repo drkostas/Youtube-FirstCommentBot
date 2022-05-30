@@ -114,6 +114,7 @@ The project uses YML config files along with command-line arguments. There are t
     - list_channels
     - list_comments
     - add_channel
+    - remove_channel
     - refresh_photos
     - set_priority
 - [commenter.yml](confs/commenter.yml): Used to run the `commenter` command
@@ -156,6 +157,11 @@ To view the followed channels run:
 
 ```ShellSession
 $ python youbot/run.py -c confs/generic.yml -l logs/generic.log -m list_channels
+```
+
+Similarly, to remove a channel run:
+```ShellSession
+$ python youbot/run.py -c confs/generic.yml -l logs/generic.log -m remove_channel -i <channel id>
 ```
 
 There is also the option to set the priorities of each channel. If 2 or more channels post videos at
