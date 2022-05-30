@@ -72,6 +72,7 @@ class YoutubeManager(YoutubeApiV3):
         # Initialize
         sleep_time = 0
         loop_cnt = 0
+        errors = 0
         # Start the main loop
         while True:
             time.sleep(sleep_time)
@@ -105,11 +106,14 @@ class YoutubeManager(YoutubeApiV3):
                         # Add the info of the new comment to be added in the DB after this loop
                         comments_added.append((video, video_url, comment_text,
                                                datetime.utcnow().isoformat()))
+                errors = 0
             except Exception as e:
+                errors += 1
                 error_txt = f"Exception in the main loop of the Commenter:\n{e}"
                 logger.error(error_txt)
-                sleep_time = self.seconds_until_next_hour()
-                logger.error(f"Will sleep until next hour ({sleep_time} seconds)")
+                if errors > 5:
+                    sleep_time = self.seconds_until_next_hour()
+                    logger.error(f"Will sleep until next hour ({sleep_time} seconds)")
             else:
                 sleep_time = self.default_sleep_time
             # Save the new comments added in the DB
