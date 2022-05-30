@@ -18,7 +18,7 @@ class YoutubeManager(YoutubeApiV3):
     __slots__ = ('db', 'dbox', 'comments_conf', 'default_sleep_time', 'max_posted_hours', 'api_type',
                  'template_comments', 'log_path', 'upload_logs_every', 'keys_path',
                  'dbox_logs_folder_path', 'dbox_keys_folder_path', 'comments_src',
-                 'comment_search_term', 'crashed_file')
+                 'comment_search_term', 'crashed_file', 'num_comments_to_check')
 
     def __init__(self, config: Dict, db_conf: Dict, cloud_conf: Dict, comments_conf: Dict,
                  sleep_time: int, max_posted_hours: int,
@@ -55,6 +55,9 @@ class YoutubeManager(YoutubeApiV3):
         self.comment_search_term = None
         if 'comment_search_term' in config:
             self.comment_search_term = config['comment_search_term']
+        self.num_comments_to_check = 50
+        if 'num_comments_to_check' in config:
+            self.num_comments_to_check = config['num_comments_to_check']
         if 'load_keys_from_cloud' in config:
             if config['load_keys_from_cloud'] is True:
                 self.load_keys_from_cloud()
@@ -132,7 +135,7 @@ class YoutubeManager(YoutubeApiV3):
                 time.sleep(sleep_time)
                 # Load recent comments
                 recent_commented_links = [comment["video_link"] for comment in
-                                          self.db.get_comments(n_recent=200)]
+                                          self.db.get_comments(n_recent=self.num_comments_to_check)]
                 # Get info for recent comments with YT api
                 comments = []
                 exceptions = []
