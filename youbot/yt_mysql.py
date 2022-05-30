@@ -181,9 +181,10 @@ class YoutubeMySqlDatastore(HighMySQL):
         """
 
         datetime_now = datetime.utcnow().isoformat()
+        # TODO: Fix string sanitizing in highsql
         comments_data = {'channel_id': ch_id,
                          'video_link': video_link,
-                         'comment': comment_text,
+                         'comment': comment_text.replace("'", "''"),
                          'comment_time': datetime_now,
                          'upload_time': upload_time}
         update_data = {'last_commented': datetime_now}
