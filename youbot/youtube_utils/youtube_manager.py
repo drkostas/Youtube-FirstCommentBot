@@ -114,6 +114,8 @@ class YoutubeManager(YoutubeApiV3):
                 if errors > 5:
                     sleep_time = self.seconds_until_next_hour()
                     logger.error(f"Will sleep until next hour ({sleep_time} seconds)")
+                    self.upload_logs()
+                    loop_cnt = 0
             else:
                 sleep_time = self.default_sleep_time
             # Save the new comments added in the DB
