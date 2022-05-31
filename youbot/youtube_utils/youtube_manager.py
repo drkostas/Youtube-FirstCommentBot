@@ -35,7 +35,7 @@ class YoutubeManager(YoutubeApiV3):
             cloud_conf = cloud_conf['config']
             self.dbox = DropboxCloudManager(config=cloud_conf)
             self.dbox_logs_folder_path = cloud_conf['logs_folder_path']
-            self.reload_data_every = cloud_conf['keys_folder_path']
+            self.dbox_keys_folder_path = cloud_conf['keys_folder_path']
             self.reload_data_every = int(
                 cloud_conf['reload_data_every']) if 'reload_data_every' in cloud_conf else 100
         elif self.comments_conf is not None:

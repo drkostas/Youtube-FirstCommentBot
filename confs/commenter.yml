@@ -29,7 +29,7 @@ cloudstore:  # Optional
       api_key: !ENV ${DROPBOX_API_KEY}
       logs_folder_path: /yt-commenter/logs
       keys_folder_path: /yt-commenter/keys
-      upload_logs_every: !ENV ${UPLOAD_LOGS_EVERY}  # number of loops in commenter()
+      reload_data_every: !ENV ${RELOAD_DATA_EVERY}  # number of loops in commenter()
     type: dropbox
 #emailer:  # Not implemented yet
 #  - config:
