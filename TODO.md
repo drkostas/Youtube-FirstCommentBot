@@ -21,6 +21,8 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [X] Configure Procfile and circleci config
 - [X] Update Readme
 - [X] Increase check speed the minutes before o'clock
+- [X] Optimize SQL queries
+- [X] Load comments & only before the loop to make every loop faster
 - [ ] Add more tests
 - [ ] Use multiple accounts (different api keys) to check for new comments
 - [ ] Improve the YouTube api functions used (Activities api func - https://developers.google.com/youtube/v3/docs/activities/list)
