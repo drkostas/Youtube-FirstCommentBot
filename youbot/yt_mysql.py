@@ -52,21 +52,26 @@ class YoutubeMySqlDatastore(HighMySQL):
         self.create_table(table=self.CHANNEL_TABLE, schema=channels_schema)
         self.create_table(table=self.COMMENTS_TABLE, schema=comments_schema)
 
-    def get_channels(self) -> List[Dict]:
+    def get_channels(self, channel_cols: List, comment_cols: List = None) -> List[Dict]:
         """ Retrieve all channels from the database. """
-        comment_cols = 'video_link, comment, comment_time, upload_time, ' \
-                       'like_count, reply_count, comment_link, comment_id'
-        channel_cols = 'username'
-        result = self.select_join(left_table=self.CHANNEL_TABLE,
-                                  right_table=self.COMMENTS_TABLE,
-                                  left_columns=channel_cols,
-                                  right_columns=comment_cols,
-                                  join_key_left='channel_id',
-                                  join_key_right='channel_id',
-                                  order_by='l.priority',
-                                  asc_or_desc='desc')
+        if comment_cols is not None:
+            result = self.select_join(left_table=self.CHANNEL_TABLE,
+                                      right_table=self.COMMENTS_TABLE,
+                                      left_columns=','.join(channel_cols),
+                                      right_columns=','.join(comment_cols),
+                                      join_key_left='channel_id',
+                                      join_key_right='channel_id',
+                                      order_by='l.priority',
+                                      asc_or_desc='asc')
+            col_names = channel_cols + comment_cols
+        else:
+            result = self.select_from_table(table=self.CHANNEL_TABLE,
+                                            columns=','.join(channel_cols),
+                                            order_by='priority',
+                                            asc_or_desc='asc')
+            col_names = channel_cols
         for row in result:
-            yield self._table_row_to_channel_dict(row, )
+            yield self._row_to_dict(row, col_names)
 
     def add_channel(self, channel_data: Dict) -> None:
         """ Insert the provided channel into the database"""
@@ -84,7 +89,7 @@ class YoutubeMySqlDatastore(HighMySQL):
         priority = int(priority)
         req_priority = priority
         req_channel_id = channel_data['channel_id']
-        channels = list(self.get_channels())
+        channels = list(self.get_channels(channel_cols=['channel_id', 'priority']))
         try:
             # Give all channels a temp priority
             for channel in channels:
@@ -202,19 +207,25 @@ class YoutubeMySqlDatastore(HighMySQL):
         try:
             self.insert_into_table(self.COMMENTS_TABLE, data=comments_data)
             # Update Channel's last_commented timestamp
+            # TODO: Do that with foreign keys
             self.update_table(table=self.CHANNEL_TABLE, set_data=update_data, where=where_statement)
         except Exception as e:
             # TODO: except HighMySQL.mysql.connector.errors.IntegrityError as e:
             # Expose mysql in HighMySQL
             logger.error(f"MySQL Error: {e}")
 
-    def get_comments(self, n_recent: int = 50, min_likes: int = -1,
-                     min_replies: int = -1, channel_id: str = None,
+    def get_comments(self, comment_cols: List[str], channel_cols: List[str] = None,
+                     n_recent: int = 50,
+                     min_likes: int = -1,
+                     min_replies: int = -1,
+                     channel_id: str = None,
                      only_null_upload: bool = False,
                      only_null_comment_id: bool = False) -> List[Dict]:
         """
         Get the latest n_recent comments from the comments table.
         Args:
+            comment_cols:
+            channel_cols:
             n_recent:
             min_likes:
             min_replies:
@@ -222,29 +233,37 @@ class YoutubeMySqlDatastore(HighMySQL):
             only_null_upload:
             only_null_comment_id:
         """
-        self.select_from_table(self.COMMENTS_TABLE)
 
-        comment_cols = 'video_link, comment, comment_time, upload_time, ' \
-                       'like_count, reply_count, comment_link, comment_id'
-        channel_cols = 'username, channel_id, channel_photo'
-        where = f'l.like_count>={min_likes} AND l.reply_count>={min_replies} '
-        if channel_id:
-            where += f"AND l.channel_id='{channel_id}' "
-        if only_null_upload:
-            where += "AND (l.upload_time='None' OR l.upload_time='-1') "
-        if only_null_comment_id:
-            where += "AND (l.comment_id='None' OR l.comment_id='-1') "
-        for comment in self.select_join(left_table=self.COMMENTS_TABLE,
-                                        right_table=self.CHANNEL_TABLE,
-                                        left_columns=comment_cols,
-                                        right_columns=channel_cols,
-                                        join_key_left='channel_id',
-                                        join_key_right='channel_id',
-                                        where=where,
-                                        order_by='l.comment_time',
-                                        asc_or_desc='desc',
-                                        limit=n_recent):
-            yield self._table_row_to_comment_dict(comment)
+        where = f'like_count>={min_likes} AND reply_count>={min_replies} '
+        if channel_id is not None:
+            where += f"AND channel_id='{channel_id}' "
+        if only_null_upload is True:
+            where += "AND (upload_time='None' OR upload_time='-1') "
+        if only_null_comment_id is True:
+            where += "AND (comment_id='None' OR comment_id='-1') "
+
+        if channel_cols is not None:
+            result = self.select_join(left_table=self.COMMENTS_TABLE,
+                                      right_table=self.CHANNEL_TABLE,
+                                      left_columns=','.join(comment_cols),
+                                      right_columns=','.join(channel_cols),
+                                      join_key_left='channel_id',
+                                      join_key_right='channel_id',
+                                      where=where,
+                                      order_by='comment_time',
+                                      asc_or_desc='desc',
+                                      limit=n_recent)
+            col_names = comment_cols + channel_cols
+        else:
+            result = self.select_from_table(table=self.COMMENTS_TABLE,
+                                            columns=','.join(comment_cols),
+                                            where=where,
+                                            order_by='comment_time',
+                                            asc_or_desc='desc',
+                                            limit=n_recent)
+            col_names = comment_cols
+        for row in result:
+            yield self._row_to_dict(row, col_names)
 
     def update_comment(self, video_link: str, comment_id: str = None,
                        like_cnt: int = None, reply_cnt: int = None, upload_time: str = None) -> None:
@@ -342,36 +361,11 @@ class YoutubeMySqlDatastore(HighMySQL):
         return results
 
     @staticmethod
-    def _table_row_to_channel_dict(row: Tuple) -> Dict:
-        """Transform a table row into a channel representation
+    def _row_to_dict(row: Tuple, col_names: List) -> Dict:
+        """Transform a table row into a dictionary
         Args:
-            row (list): The database row
+            row (tuple): The database row
+            col_names (list): The names of the columns retrieved
         """
 
-        channel = dict()
-        channel['channel_id'] = row[0]
-        channel['username'] = row[1]
-        channel['added_on'] = row[2]
-        channel['last_commented'] = row[3]
-        channel['priority'] = row[4]
-        channel['channel_photo'] = row[5]
-        return channel
-
-    @staticmethod
-    def _table_row_to_comment_dict(row: Tuple) -> Dict:
-        """Transform a table row into a channel representation
-        Args:
-            row (list): The database row
-        """
-
-        channel = dict()
-        channel['video_link'] = row[0]
-        channel['comment'] = row[1]
-        channel['comment_time'] = row[2]
-        channel['upload_time'] = row[3]
-        channel['like_count'] = row[4]
-        channel['reply_count'] = row[5]
-        channel['comment_link'] = row[6]
-        channel['channel_id'] = row[7]
-        channel['username'] = row[8]
-        return channel
+        return dict(zip(col_names, row))

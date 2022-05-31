@@ -16,7 +16,7 @@ logger = ColorLogger(logger_name='YoutubeManager', color='cyan')
 
 class YoutubeManager(YoutubeApiV3):
     __slots__ = ('db', 'dbox', 'comments_conf', 'default_sleep_time', 'max_posted_hours', 'api_type',
-                 'template_comments', 'log_path', 'upload_logs_every', 'keys_path',
+                 'template_comments', 'log_path', 'reload_data_every', 'keys_path',
                  'dbox_logs_folder_path', 'dbox_keys_folder_path', 'comments_src',
                  'comment_search_term', 'crashed_file', 'num_comments_to_check')
 
@@ -35,9 +35,9 @@ class YoutubeManager(YoutubeApiV3):
             cloud_conf = cloud_conf['config']
             self.dbox = DropboxCloudManager(config=cloud_conf)
             self.dbox_logs_folder_path = cloud_conf['logs_folder_path']
-            self.dbox_keys_folder_path = cloud_conf['keys_folder_path']
-            self.upload_logs_every = int(
-                cloud_conf['upload_logs_every']) if 'upload_logs_every' in cloud_conf else 100
+            self.reload_data_every = cloud_conf['keys_folder_path']
+            self.reload_data_every = int(
+                cloud_conf['reload_data_every']) if 'reload_data_every' in cloud_conf else 100
         elif self.comments_conf is not None:
             if self.comments_src == 'dropbox':
                 raise YoutubeManagerError("Requested `dropbox` comments type "
@@ -73,22 +73,24 @@ class YoutubeManager(YoutubeApiV3):
         sleep_time = 0
         loop_cnt = 0
         errors = 0
+        self.load_template_comments()
+        channel_ids = [channel['channel_id'] for channel in
+                       self.db.get_channels(channel_cols=['channel_id'])]
+        commented_comments, video_links_commented = self.get_comments(channel_ids=channel_ids,
+                                                                      n_recent=500)
         # Start the main loop
         while True:
             time.sleep(sleep_time)
-            # Log upload handling
-            if self.dbox is not None:
-                loop_cnt += 1
-                if loop_cnt > self.upload_logs_every:
+            # Reload stuff and upload logs (not if in fast mode where sleep=1)
+            loop_cnt += 1
+            if loop_cnt > self.reload_data_every and sleep_time > 1:
+                channel_ids = [channel['channel_id'] for channel in
+                               self.db.get_channels(channel_cols=['channel_id'])]
+                self.load_template_comments()
+                if self.dbox is not None:
                     self.upload_logs()
-                    loop_cnt = 0
+                loop_cnt = 0
             # Load necessary data
-            self.load_template_comments()
-            channel_ids = [channel['channel_id'] for channel in
-                           self.db.get_channels()]
-            commented_comments, video_links_commented = self.get_comments(channel_ids=channel_ids,
-                                                                          n_recent=500)
-
             latest_videos = self.get_uploads(channels=channel_ids,
                                              max_posted_hours=self.max_posted_hours)
             comments_added = []
@@ -104,6 +106,7 @@ class YoutubeManager(YoutubeApiV3):
                                                            commented_comments=commented_comments)
                         self.comment(video_id=video["id"], comment_text=comment_text)
                         # Add the info of the new comment to be added in the DB after this loop
+                        video_links_commented.append(video_url)
                         comments_added.append((video, video_url, comment_text,
                                                datetime.utcnow().isoformat()))
                 errors = 0
@@ -128,12 +131,16 @@ class YoutubeManager(YoutubeApiV3):
                                         video_link=video_url,
                                         comment_text=comment_text,
                                         upload_time=video["published_at"])
-                    logger.info(f"Comment Added to Channel: {video['channel_id']} ({video_url})")
+                    # Update commented_comments, so we don't have to reload it from the DB
+                    commented_comments[video['channel_id']].append({'channel_id': video['channel_id'],
+                                                                    'video_link': video_url,
+                                                                    'comment': comment_text,
+                                                                    'comment_time': comment_time})
             except Exception as e:
-                error_txt = f"FatalMySQL error while storing comment:\n{e}"
-                logger.error(error_txt)
                 # Create file that prevents restarting
                 self.touch(self.crashed_file)
+                error_txt = f"FatalMySQL error while storing comment:\n{e}"
+                logger.error(error_txt)
                 raise e
 
     def accumulator(self):
@@ -144,7 +151,8 @@ class YoutubeManager(YoutubeApiV3):
                 time.sleep(sleep_time)
                 # Load recent comments
                 recent_commented_links = [comment["video_link"] for comment in
-                                          self.db.get_comments(n_recent=self.num_comments_to_check)]
+                                          self.db.get_comments(comment_cols=['video_link'],
+                                                               n_recent=self.num_comments_to_check)]
                 # Get info for recent comments with YT api
                 comments = []
                 exceptions = []
@@ -163,7 +171,7 @@ class YoutubeManager(YoutubeApiV3):
                                            reply_cnt=comment_dict['reply_count'])
                 if len(exceptions) > cnt / 2 and cnt > 0:
                     logger.error(f"{len(exceptions)} exceptions occurred! "
-                                 f"Will only print  the first one.")
+                                 f"Will only raise the first one.")
                     raise exceptions[0]
             except Exception as e:
                 error_txt = f"Exception in the main loop of the Accumulator:\n{e}"
@@ -174,10 +182,12 @@ class YoutubeManager(YoutubeApiV3):
                 sleep_time = self.default_sleep_time
 
     def get_comments(self, n_recent, channel_ids):
+        comment_cols = ['channel_id', 'video_link', 'comment', 'comment_time']
         commented_comments = {}
         video_links_commented = []
         for channel_id in channel_ids:
-            commented_comments[channel_id] = list(self.db.get_comments(channel_id=channel_id,
+            commented_comments[channel_id] = list(self.db.get_comments(comment_cols=comment_cols,
+                                                                       channel_id=channel_id,
                                                                        n_recent=n_recent))
             video_links_commented += [comment['video_link'] for comment in
                                       commented_comments[channel_id]]
@@ -185,7 +195,9 @@ class YoutubeManager(YoutubeApiV3):
 
     def fill_upload_times(self, n_recent, min_likes, min_replies):
         video_ids = [row['video_link'].split("?v=")[-1]
-                     for row in self.db.get_comments(n_recent, min_likes, min_replies,
+                     for row in self.db.get_comments(comment_cols=['video_link'],
+                                                     n_recent=n_recent,
+                                                     min_likes=min_likes, min_replies=min_replies,
                                                      only_null_upload=True)]
         for video in self.get_videos_upload_times(videos=video_ids):
             video_link = f"https://youtube.com/watch?v={video['video_id']}"
@@ -218,7 +230,8 @@ class YoutubeManager(YoutubeApiV3):
                                       "to remove channel!")
 
     def refresh_photos(self):
-        channel_ids = [channel["channel_id"] for channel in self.db.get_channels()]
+        channel_ids = [channel["channel_id"]
+                       for channel in self.db.get_channels(channel_cols=['channel_id'])]
         profile_pictures = self.get_profile_pictures(channel_ids)
         for channel_id, picture_url in profile_pictures:
             self.db.update_channel_photo(channel_id, picture_url)
@@ -238,12 +251,14 @@ class YoutubeManager(YoutubeApiV3):
             raise YoutubeManagerError("Channel not found!")
 
     def list_channels(self) -> None:
-        channels = [(row["priority"], row["username"].title(), row["channel_id"],
+        channels = [[row["priority"], row["username"].title(), row["channel_id"],
                      arrow.get(row["added_on"]).humanize(),
                      arrow.get(row["last_commented"]).humanize(),
                      row["channel_photo"]
-                     )
-                    for row in self.db.get_channels()]
+                     ]
+                    for row in self.db.get_channels(
+                channel_cols=['priority', 'username', 'channel_id', 'added_on', 'last_commented',
+                              'channel_photo'])]
 
         headers = ['Priority', 'Channel Name', 'Channel ID', 'Added On', 'Last Commented',
                    'Channel Photo']
@@ -251,9 +266,13 @@ class YoutubeManager(YoutubeApiV3):
 
     def list_comments(self, n_recent: int = 50, min_likes: int = -1,
                       min_replies: int = -1) -> None:
-
+        comment_cols = ['comment_time', 'upload_time', 'comment_time', 'like_count',
+                        'reply_count', 'comment_link', 'comment']
+        channel_cols = ['username']
         comments = []
-        for row in self.db.get_comments(n_recent, min_likes, min_replies):
+        for row in self.db.get_comments(comment_cols=comment_cols, channel_cols=channel_cols,
+                                        n_recent=n_recent,
+                                        min_likes=min_likes, min_replies=min_replies):
             username = row["username"].title()
             comment_time = arrow.get(row["comment_time"]).humanize()
             if row["upload_time"] != "-1" and row["upload_time"] != "None":
@@ -351,7 +370,7 @@ class YoutubeManager(YoutubeApiV3):
         """
         num_videos = random.randint(1, 4)
         channels = [(channel['username'], channel['channel_id']) for channel in
-                    self.db.get_channels()]
+                    self.db.get_channels(channel_cols=['username', 'channel_id'])]
         for video_ind in range(num_videos):
             vid_id = ''.join(
                 random.choices(string.ascii_uppercase + string.ascii_lowercase + string.digits, k=11))
