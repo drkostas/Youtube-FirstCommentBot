@@ -29,7 +29,8 @@ def get_args() -> argparse.Namespace:
     optional_args = parser.add_argument_group('Optional Arguments')
     commands = ['commenter', 'accumulator',
                 'add_channel', 'remove_channel', 'list_channels', 'list_comments',
-                'refresh_photos', 'set_priority', 'fill_upload_times']
+                'refresh_photos', 'set_priority',
+                'fill_upload_times', 'fill_video_titles', 'fix_comment_links']
     optional_args.add_argument('-m', '--run-mode', choices=commands,
                                default=commands[0],
                                help='Description of the run modes')
@@ -86,10 +87,6 @@ def list_channels(youtube: YoutubeManager, args: argparse.Namespace) -> None:
     youtube.list_channels()
 
 
-def fill_upload_times(youtube: YoutubeManager, args: argparse.Namespace) -> None:
-    youtube.fill_upload_times(args.n_recent, args.min_likes, args.min_replies)
-
-
 def list_comments(youtube: YoutubeManager, args: argparse.Namespace) -> None:
     youtube.list_comments(n_recent=args.n_recent, min_likes=args.min_likes,
                           min_replies=args.min_replies)
@@ -97,6 +94,18 @@ def list_comments(youtube: YoutubeManager, args: argparse.Namespace) -> None:
 
 def refresh_photos(youtube: YoutubeManager, args: argparse.Namespace) -> None:
     youtube.refresh_photos()
+
+
+def fill_upload_times(youtube: YoutubeManager, args: argparse.Namespace) -> None:
+    youtube.fill_upload_times(args.n_recent, args.min_likes, args.min_replies)
+
+
+def fill_video_titles(youtube: YoutubeManager, args: argparse.Namespace) -> None:
+    youtube.fill_video_titles(args.n_recent, args.min_likes, args.min_replies)
+
+
+def fix_comment_links(youtube: YoutubeManager, args: argparse.Namespace) -> None:
+    youtube.fix_comment_links(args.n_recent, args.min_likes, args.min_replies)
 
 
 def main():

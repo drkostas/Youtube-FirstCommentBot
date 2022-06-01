@@ -81,9 +81,12 @@ class YoutubeManager(YoutubeApiV3):
         # Start the main loop
         while True:
             time.sleep(sleep_time)
-            # Reload stuff and upload logs (not if in fast mode where sleep=1)
+            # Reload stuff and upload logs
+            # (not if in fast mode where sleep=1)
+            # (always reload if sleep time>5' which will probably
+            # be caused by sleep_until_next_next_hour())
             loop_cnt += 1
-            if loop_cnt > self.reload_data_every and sleep_time > 1:
+            if (loop_cnt > self.reload_data_every and sleep_time > 1) or sleep_time > 600:
                 channel_ids = [channel['channel_id'] for channel in
                                self.db.get_channels(channel_cols=['channel_id'])]
                 self.load_template_comments()
@@ -130,7 +133,8 @@ class YoutubeManager(YoutubeApiV3):
                     self.db.add_comment(video["channel_id"],
                                         video_link=video_url,
                                         comment_text=comment_text,
-                                        upload_time=video["published_at"])
+                                        upload_time=video["published_at"],
+                                        video_title=video['title'])
                     # Update commented_comments, so we don't have to reload it from the DB
                     commented_comments[video['channel_id']].append({'channel_id': video['channel_id'],
                                                                     'video_link': video_url,
@@ -199,10 +203,32 @@ class YoutubeManager(YoutubeApiV3):
                                                      n_recent=n_recent,
                                                      min_likes=min_likes, min_replies=min_replies,
                                                      only_null_upload=True)]
-        for video in self.get_videos_upload_times(videos=video_ids):
+        for video in self.get_video_info(videos=video_ids):
             video_link = f"https://youtube.com/watch?v={video['video_id']}"
             self.db.update_comment(video_link=video_link,
                                    upload_time=video['upload_time'])
+
+    def fix_comment_links(self, n_recent, min_likes, min_replies):
+        video_info = [
+            (row['video_link'].split("?v=")[-1], row['comment_id'])
+            for row in self.db.get_comments(comment_cols=['video_link', 'comment_id'],
+                                            n_recent=n_recent,
+                                            min_likes=min_likes, min_replies=min_replies)]
+        for video_id, comment_id in video_info:
+            video_link = f"https://youtube.com/watch?v={video_id}"
+            self.db.update_comment(video_link=video_link,
+                                   comment_id=comment_id)
+
+    def fill_video_titles(self, n_recent, min_likes, min_replies):
+        video_ids = [row['video_link'].split("?v=")[-1]
+                     for row in self.db.get_comments(comment_cols=['video_link'],
+                                                     n_recent=n_recent,
+                                                     min_likes=min_likes, min_replies=min_replies,
+                                                     only_null_video_title=True)]
+        for video in self.get_video_info(videos=video_ids):
+            video_link = f"https://youtube.com/watch?v={video['video_id']}"
+            self.db.update_comment(video_link=video_link,
+                                   video_title=video['video_title'])
 
     def add_channel(self, channel_id: str = None, username: str = None) -> None:
         if channel_id:

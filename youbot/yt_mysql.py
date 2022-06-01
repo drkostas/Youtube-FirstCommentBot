@@ -45,6 +45,7 @@ class YoutubeMySqlDatastore(HighMySQL):
             comment_id   varchar(100) default '-1' null,
             video_id     varchar(100) default '-1' null,
             comment_link varchar(100) default '-1' null,
+            video_title varchar(255) default '-1' null,
             constraint video_link_pk PRIMARY KEY (video_link),
             constraint video_link     unique (video_link),
             constraint channel_id foreign key (channel_id) references channels (channel_id) on update cascade on delete cascade"""
@@ -184,7 +185,8 @@ class YoutubeMySqlDatastore(HighMySQL):
                           set_data=set_data,
                           where=f"channel_id='{channel_id}'")
 
-    def add_comment(self, ch_id: str, video_link: str, comment_text: str, upload_time: str) -> None:
+    def add_comment(self, ch_id: str, video_link: str, comment_text: str,
+                    upload_time: str, video_title: str) -> None:
         """ TODO: check the case where a comment contains single quotes
         Add comment data and update the `last_commented` channel column.
         Args:
@@ -192,6 +194,7 @@ class YoutubeMySqlDatastore(HighMySQL):
             video_link:
             comment_text:
             upload_time:
+            video_title:
         """
 
         datetime_now = datetime.utcnow().isoformat()
@@ -200,7 +203,8 @@ class YoutubeMySqlDatastore(HighMySQL):
                          'video_link': video_link,
                          'comment': comment_text.replace("'", "''"),
                          'comment_time': datetime_now,
-                         'upload_time': upload_time}
+                         'upload_time': upload_time,
+                         'video_title': video_title}
         update_data = {'last_commented': datetime_now}
         where_statement = f"channel_id='{ch_id}'"
 
@@ -220,7 +224,8 @@ class YoutubeMySqlDatastore(HighMySQL):
                      min_replies: int = -1,
                      channel_id: str = None,
                      only_null_upload: bool = False,
-                     only_null_comment_id: bool = False) -> List[Dict]:
+                     only_null_comment_id: bool = False,
+                     only_null_video_title: bool = False) -> List[Dict]:
         """
         Get the latest n_recent comments from the comments table.
         Args:
@@ -232,6 +237,7 @@ class YoutubeMySqlDatastore(HighMySQL):
             channel_id:
             only_null_upload:
             only_null_comment_id:
+            only_null_video_title:
         """
 
         where = f'like_count>={min_likes} AND reply_count>={min_replies} '
@@ -241,6 +247,8 @@ class YoutubeMySqlDatastore(HighMySQL):
             where += "AND (upload_time='None' OR upload_time='-1') "
         if only_null_comment_id is True:
             where += "AND (comment_id='None' OR comment_id='-1') "
+        if only_null_video_title is True:
+            where += "AND (video_title='None' OR video_title='-1') "
 
         if channel_cols is not None:
             result = self.select_join(left_table=self.COMMENTS_TABLE,
@@ -266,7 +274,8 @@ class YoutubeMySqlDatastore(HighMySQL):
             yield self._row_to_dict(row, col_names)
 
     def update_comment(self, video_link: str, comment_id: str = None,
-                       like_cnt: int = None, reply_cnt: int = None, upload_time: str = None) -> None:
+                       like_cnt: int = None, reply_cnt: int = None,
+                       upload_time: str = None, video_title: str = None) -> None:
         """
         Populate a comment entry with additional information.
         Args:
@@ -275,26 +284,28 @@ class YoutubeMySqlDatastore(HighMySQL):
             like_cnt:
             reply_cnt:
             upload_time:
+            video_title:
         """
 
         # Get video id
         video_id = video_link.split('v=')[1].split('&')[0]
-        # Create Comment Link
-        comment_link = f'https://youtube.com/watch?v={video_id}&lc={comment_id}'
         # Construct the update key-values
         set_data = {}
-        if comment_link is not None:
-            set_data['comment_link'] = comment_link
         if video_id is not None:
             set_data['video_id'] = video_id
         if comment_id is not None:
             set_data['comment_id'] = comment_id
+            # Create Comment Link
+            comment_link = f'https://youtube.com/watch?v={video_id}&lc={comment_id}'
+            set_data['comment_link'] = comment_link
         if like_cnt is not None:
             set_data['like_count'] = like_cnt
         if reply_cnt is not None:
             set_data['reply_count'] = reply_cnt
         if upload_time is not None:
             set_data['upload_time'] = upload_time
+        if video_title is not None:
+            set_data['video_title'] = video_title.replace("'", "''")
         # Execute the update command
         self.update_table(table=self.COMMENTS_TABLE,
                           set_data=set_data,

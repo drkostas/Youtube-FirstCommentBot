@@ -23,8 +23,14 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [X] Increase check speed the minutes before o'clock
 - [X] Optimize SQL queries
 - [X] Load comments & only before the loop to make every loop faster
+- [X] Add Video Title
+- [ ] Make get_video_comments() more efficient by loading 50 comments at a time
+- [ ] In add_comment() use foreign keys to update the channels table and save time
+- [ ] Optimize get_next_template_comment()
+- [ ] Use the "my subscribers" fields instead of retrieving the channels from the DB
+- [ ] Instead of retrieving the playlist id everytime, load it only every few epochs and cache it
 - [ ] Add more tests
 - [ ] Use multiple accounts (different api keys) to check for new comments
-- [ ] Improve the YouTube api functions used (Activities api func - https://developers.google.com/youtube/v3/docs/activities/list)
 - [ ] Send me email on fatal error (on later version)
 - [ ] Recreate the Livestreaming module
+- [ ] For very fast lookups using Redis would be optimal but an overkill at this point

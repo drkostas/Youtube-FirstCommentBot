@@ -244,7 +244,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
 
         return profile_pictures_result
 
-    def get_videos_upload_times(self, videos: List):
+    def get_video_info(self, videos: List):
         videos_lists = self.split_list(videos, 50)
         videos_found = []
         # Get the Playlist IDs of each channel
@@ -252,7 +252,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
             channels_response = self._api.videos().list(
                 id=",".join(videos),
                 part="contentDetails,snippet",
-                fields="items(id,snippet(channelId,publishedAt))"
+                fields="items(id,snippet(channelId,publishedAt,title))"
             ).execute()
             videos_found.extend(channels_response["items"])
 
@@ -260,8 +260,9 @@ class YoutubeApiV3(AbstractYoutubeApi):
             video_id = video['id']
             channel_id = video['snippet']['channelId']
             upload_time = video['snippet']['publishedAt']
-            yield {'video_id': video_id, 'channel_id': channel_id, 'upload_time': upload_time}
-
+            video_title = video['snippet']['title']
+            yield {'video_id': video_id, 'channel_id': channel_id, 'upload_time': upload_time,
+                   'video_title': video_title}
 
     @staticmethod
     def _yt_to_channel_dict(response: Dict) -> Union[Dict, None]:
