@@ -204,7 +204,7 @@ class YoutubeMySqlDatastore(HighMySQL):
                          'comment': comment_text.replace("'", "''"),
                          'comment_time': datetime_now,
                          'upload_time': upload_time,
-                         'video_title': video_title}
+                         'video_title': video_title.replace("'", "''")}
         update_data = {'last_commented': datetime_now}
         where_statement = f"channel_id='{ch_id}'"
 
