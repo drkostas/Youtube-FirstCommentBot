@@ -130,7 +130,7 @@ class YoutubeMySqlDatastore(HighMySQL):
             ch_id (str): The channel ID
         """
 
-        where_statement = f"id='{ch_id}'"
+        where_statement = f"channel_id='{ch_id}'"
         result = self.select_from_table(table=self.CHANNEL_TABLE, where=where_statement)
         if len(result) > 1:
             logger.warning("Duplicate channel retrieved from SELECT statement:{result}")
@@ -160,7 +160,7 @@ class YoutubeMySqlDatastore(HighMySQL):
             ch_id (str): The channel ID
         """
 
-        where_statement = f"id='{ch_id}'"
+        where_statement = f"channel_id='{ch_id}'"
         self.delete_from_table(table=self.CHANNEL_TABLE, where=where_statement)
 
     def remove_channel_by_username(self, ch_username: str) -> None:
@@ -275,7 +275,8 @@ class YoutubeMySqlDatastore(HighMySQL):
 
     def update_comment(self, video_link: str, comment_id: str = None,
                        like_cnt: int = None, reply_cnt: int = None,
-                       upload_time: str = None, video_title: str = None) -> None:
+                       upload_time: str = None, video_title: str = None,
+                       comment_time: str = None) -> None:
         """
         Populate a comment entry with additional information.
         Args:
@@ -285,6 +286,7 @@ class YoutubeMySqlDatastore(HighMySQL):
             reply_cnt:
             upload_time:
             video_title:
+            comment_time:
         """
 
         # Get video id
@@ -302,6 +304,8 @@ class YoutubeMySqlDatastore(HighMySQL):
             set_data['like_count'] = like_cnt
         if reply_cnt is not None:
             set_data['reply_count'] = reply_cnt
+        if comment_time is not None:
+            set_data['comment_time'] = comment_time
         if upload_time is not None:
             set_data['upload_time'] = upload_time
         if video_title is not None:
