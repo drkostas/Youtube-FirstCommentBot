@@ -32,5 +32,6 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [ ] Add more tests
 - [ ] Use multiple accounts (different api keys) to check for new comments
 - [ ] Send me email on fatal error (on later version)
+- [ ] Email me if there are replies mentioning the word "bot"
 - [ ] Recreate the Livestreaming module
 - [ ] For very fast lookups using Redis would be optimal but an overkill at this point
