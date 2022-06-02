@@ -169,7 +169,6 @@ class YoutubeManager(YoutubeApiV3):
                         exceptions.append(e)
                 # Update comment data in the DB
                 for comment_dict in comments:
-                    logger.info(f"Updating comment {comment_dict['url']}")
                     self.db.update_comment(video_link=comment_dict['url'],
                                            comment_id=comment_dict['comment_id'],
                                            like_cnt=comment_dict['like_count'],
