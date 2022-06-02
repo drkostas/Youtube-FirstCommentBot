@@ -1,25 +1,25 @@
 tag: generic
 datastore:
   - config:
-      hostname: !ENV ${MYSQL_HOST}
-      username: !ENV ${MYSQL_USERNAME}
-      password: !ENV ${MYSQL_PASSWORD}
-      db_name: !ENV ${MYSQL_DB_NAME}
+      hostname: !ENV ${MYSQL_HOST}  # localhost or the IP of your DB
+      username: !ENV ${MYSQL_USERNAME}  # DB username
+      password: !ENV ${MYSQL_PASSWORD}  # DB password
+      db_name: !ENV ${MYSQL_DB_NAME}  # The name of your DB/schema
       port: 3306
     type: mysql
 youtube:
   - config:
-      client_id: !ENV ${CLIENT_ID_GEN}
-      client_secret: !ENV ${CLIENT_SECRET_GEN}
+      client_id: !ENV ${CLIENT_ID_GEN}  # YouTube client ID (see Readme)
+      client_secret: !ENV ${CLIENT_SECRET_GEN}  # YouTube client secret (see Readme)
       api_version: v3
       read_only_scope: https://www.googleapis.com/auth/youtube.force-ssl
-      username: !ENV ${USERNAME_GEN}  # Can be omitted (automatically derived)
-      load_keys_from_cloud: true  # cloudstore config is required
-      keys_path: keys
-    type: normal  # normal, simulated
+      username: !ENV ${USERNAME_GEN}  # Can be omitted (automatically derived). Useful when you are using a different api key for the accumulator
+      load_keys_from_cloud: true  # if true, cloudstore config is required. Loads the YT keys from the specified dropbox folder
+      keys_path: keys  # The local path of the YT keys
+    type: normal  # options: normal, simulated (simulated is just for testing)
 cloudstore:  # Optional
   - config:
-      api_key: !ENV ${DROPBOX_API_KEY}
-      logs_folder_path: /yt-commenter/logs
-      keys_folder_path: /yt-commenter/keys
+      api_key: !ENV ${DROPBOX_API_KEY}  # Dropbox api key, see Readme
+      logs_folder_path: /yt-commenter/logs  # The Dropbox path where the log files are going to be being backed up
+      keys_folder_path: /yt-commenter/keys  # The Dropbox path where the keys are going to be copied locally from
     type: dropbox
