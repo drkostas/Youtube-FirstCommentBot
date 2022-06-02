@@ -346,7 +346,7 @@ class YoutubeManager(YoutubeApiV3):
         available_comments = self.template_comments['default'].copy()
         # Build the comments pool
         if channel_id in self.template_comments:
-            available_comments += self.template_comments[channel_id]
+            available_comments = self.template_comments[channel_id] + available_comments
         # Extract unique comments commented
         unique_com_coms = set(data['comment'] for data in commented_comments)
         new_comments = set(available_comments) - unique_com_coms
