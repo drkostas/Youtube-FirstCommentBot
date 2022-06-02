@@ -15,13 +15,14 @@ logger = ColorLogger(logger_name='YoutubeManager', color='cyan')
 
 
 class YoutubeManager(YoutubeApiV3):
-    __slots__ = ('db', 'dbox', 'comments_conf', 'default_sleep_time', 'max_posted_hours', 'api_type',
+    __slots__ = ('db', 'dbox', 'comments_conf', 'default_sleep_time', 'fast_sleep_time',
+                 'max_posted_hours', 'api_type',
                  'template_comments', 'log_path', 'reload_data_every', 'keys_path',
                  'dbox_logs_folder_path', 'dbox_keys_folder_path', 'comments_src',
                  'comment_search_term', 'crashed_file', 'num_comments_to_check')
 
     def __init__(self, config: Dict, db_conf: Dict, cloud_conf: Dict, comments_conf: Dict,
-                 sleep_time: int, max_posted_hours: int,
+                 sleep_time: int, fast_sleep_time:int, max_posted_hours: int,
                  api_type: str, tag: str, log_path: str):
         global logger
         logger = ColorLogger(logger_name=f'[{tag}] YoutubeManager', color='cyan')
@@ -43,6 +44,7 @@ class YoutubeManager(YoutubeApiV3):
                 raise YoutubeManagerError("Requested `dropbox` comments type "
                                           "but `cloudstore` config is not set!")
         self.default_sleep_time = sleep_time
+        self.fast_sleep_time = fast_sleep_time
         self.max_posted_hours = max_posted_hours
         self.api_type = api_type
         self.template_comments = {}
@@ -124,7 +126,7 @@ class YoutubeManager(YoutubeApiV3):
                     loop_cnt = 0
             else:
                 if datetime.today().minute >= 59 or datetime.today().minute <= 0:
-                    sleep_time = 1  # check every second when close to new hour
+                    sleep_time = self.fast_sleep_time  # check every second when close to new hour
                 else:
                     sleep_time = self.default_sleep_time
             # Save the new comments added in the DB
