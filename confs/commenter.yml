@@ -17,6 +17,7 @@ youtube:
       load_keys_from_cloud: true  # cloudstore config is required
       keys_path: keys  # if true, cloudstore config is required. Loads the YT keys from the specified dropbox folder
       sleep_time: !ENV ${SLEEP_TIME_COMM}  # Number of seconds to wait until checking for new videos again. Increase this if you are getting api limit errors
+      fast_sleep_time: !ENV ${FAST_SLEEP_TIME_COMM}  # Number of seconds to wait when on fast mode
       max_posted_hours: !ENV ${MAX_POSTED_HOURS_COMM} # max num. of hours to check back for posted videos. Set it to 1 the first time your run the commenter
     type: normal  # normal, simulated
 comments:  # options: normal, simulated (simulated is just for testing)

@@ -126,6 +126,8 @@ def main():
     you_conf = conf_obj.get_config('youtube')[0]
     sleep_time = int(you_conf['config']['sleep_time']) \
         if 'sleep_time' in you_conf['config'] else 120
+    fast_sleep_time = int(you_conf['config']['sleep_time']) \
+        if 'fast_sleep_time' in you_conf['config'] else 1
     max_posted_hours = int(you_conf['config']['max_posted_hours']) \
         if 'max_posted_hours' in you_conf['config'] else 24
     db_conf = conf_obj.get_config('datastore')[0]
@@ -141,7 +143,7 @@ def main():
     # Setup YouTube API
     youtube = YoutubeManager(config=you_conf['config'],
                              db_conf=db_conf, cloud_conf=cloud_conf, comments_conf=comments_conf,
-                             sleep_time=sleep_time,
+                             sleep_time=sleep_time, fast_sleep_time=fast_sleep_time,
                              max_posted_hours=max_posted_hours,
                              api_type=you_conf['type'], tag=conf_obj.tag, log_path=args.log)
     # Run in the specified run mode
