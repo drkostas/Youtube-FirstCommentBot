@@ -204,7 +204,10 @@ class YoutubeApiV3(AbstractYoutubeApi):
                                        "like_count":
                                            comment_thread['snippet']['topLevelComment']['snippet'][
                                                'likeCount'],
-                                       "reply_count": comment_thread['snippet']['totalReplyCount']}
+                                       "reply_count": comment_thread['snippet']['totalReplyCount'],
+                                       "comment_time":
+                                           comment_thread['snippet']['topLevelComment']['snippet'][
+                                               'publishedAt']}
                     comments.append(current_comment)
             except Exception as e:
                 logger.error(f"Exception in get_video_comments() for {comment_thread}.")

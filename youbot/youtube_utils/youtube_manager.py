@@ -169,10 +169,12 @@ class YoutubeManager(YoutubeApiV3):
                         exceptions.append(e)
                 # Update comment data in the DB
                 for comment_dict in comments:
+                    logger.info(f"Updating comment {comment_dict['url']}")
                     self.db.update_comment(video_link=comment_dict['url'],
                                            comment_id=comment_dict['comment_id'],
                                            like_cnt=comment_dict['like_count'],
-                                           reply_cnt=comment_dict['reply_count'])
+                                           reply_cnt=comment_dict['reply_count'],
+                                           comment_time=comment_dict['comment_time'])
                 if len(exceptions) > cnt / 2 and cnt > 0:
                     logger.error(f"{len(exceptions)} exceptions occurred! "
                                  f"Will only raise the first one.")
