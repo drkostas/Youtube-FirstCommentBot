@@ -118,6 +118,10 @@ The project uses YML config files along with command-line arguments. There are t
     - refresh_photos
     - set_priority
 - [commenter.yml](confs/commenter.yml): Used to run the `commenter` command
+  - One thing to bear in mind here is that the bot checks and comments only on videos not commented 
+  yet. So  the first time your run it you don't want to comment on every single video in the past few 
+  days. So make sure you set the `max_posted_hours` option to 1 and increase it the next days 
+  if you want.
 - [accumulator.yml](confs/accumulator.yml): Used to run the `accumulator` command
 
 I am not going to go into depth for each available setting because you can use the three YML files as
@@ -134,7 +138,8 @@ pool of available comments, and the bot automatically picks one that hasn't been
 respective channel yet, otherwise, it picks the one that was posted the longest time ago. Just create
 a `default.txt` file in a folder named `comments` and write one comment per line. If, for a specific
 channel, you want to have additional comments, create another txt file named after the channel's id.
-For example, you can create a `UC-ImLFXGIe2FC4Wo5hOodnw.txt` for the Veritasium YT channel.
+For example, you can create a `UC-ImLFXGIe2FC4Wo5hOodnw.txt` for the Veritasium YT channel that 
+has that id.
 
 ### Start following channels <a name = "add_channels"></a>
 
