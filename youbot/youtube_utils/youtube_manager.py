@@ -22,7 +22,7 @@ class YoutubeManager(YoutubeApiV3):
                  'comment_search_term', 'crashed_file', 'num_comments_to_check')
 
     def __init__(self, config: Dict, db_conf: Dict, cloud_conf: Dict, comments_conf: Dict,
-                 sleep_time: int, fast_sleep_time:int, max_posted_hours: int,
+                 sleep_time: int, fast_sleep_time: int, max_posted_hours: int,
                  api_type: str, tag: str, log_path: str):
         global logger
         logger = ColorLogger(logger_name=f'[{tag}] YoutubeManager', color='cyan')
@@ -233,7 +233,9 @@ class YoutubeManager(YoutubeApiV3):
             self.db.update_comment(video_link=video_link,
                                    video_title=video['video_title'])
 
-    def add_channel(self, channel_id: str = None, username: str = None) -> None:
+    def add_channel(self, channel_id: str = None,
+                    username: str = None,
+                    active: bool = True) -> None:
         if channel_id:
             channel_info = self.get_channel_info_by_id(channel_id)
         elif username:
@@ -242,7 +244,7 @@ class YoutubeManager(YoutubeApiV3):
             raise YoutubeManagerError("You should either pass channel id or username "
                                       "to add channel!")
         if channel_info:
-            self.db.add_channel(channel_data=channel_info)
+            self.db.add_channel(channel_data=channel_info, active=active)
             logger.info(f"Channel `{channel_info['username']}` successfully added!")
         else:
             raise YoutubeManagerError("Channel not found!")
@@ -260,10 +262,21 @@ class YoutubeManager(YoutubeApiV3):
 
     def refresh_photos(self):
         channel_ids = [channel["channel_id"]
-                       for channel in self.db.get_channels(channel_cols=['channel_id'])]
+                       for channel in self.db.get_channels(channel_cols=['channel_id'], where='TRUE')]
         profile_pictures = self.get_profile_pictures(channel_ids)
         for channel_id, picture_url in profile_pictures:
             self.db.update_channel_photo(channel_id, picture_url)
+
+    def retrieve_old_channels(self, n_recent, min_likes, min_replies):
+        commented_channel_ids = [comment["channel_id"]
+                                 for comment in self.db.get_comments(comment_cols=['channel_id'],
+                                                                     n_recent=n_recent)]
+        current_channel_ids = [channel["channel_id"]
+                               for channel in self.db.get_channels(channel_cols=['channel_id'],
+                                                                   where='TRUE')]
+        for channel_id in set(commented_channel_ids):
+            if channel_id not in current_channel_ids:
+                self.add_channel(channel_id=channel_id, active=False)
 
     def set_priority(self, channel_id: str = None, username: str = None, priority: str = None) -> None:
         if channel_id:

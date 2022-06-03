@@ -53,7 +53,8 @@ class YoutubeMySqlDatastore(HighMySQL):
         self.create_table(table=self.CHANNEL_TABLE, schema=channels_schema)
         self.create_table(table=self.COMMENTS_TABLE, schema=comments_schema)
 
-    def get_channels(self, channel_cols: List, comment_cols: List = None) -> List[Dict]:
+    def get_channels(self, channel_cols: List, comment_cols: List = None,
+                     where: str = 'active IS TRUE') -> List[Dict]:
         """ Retrieve all channels from the database. """
         if comment_cols is not None:
             result = self.select_join(left_table=self.CHANNEL_TABLE,
@@ -63,22 +64,26 @@ class YoutubeMySqlDatastore(HighMySQL):
                                       join_key_left='channel_id',
                                       join_key_right='channel_id',
                                       order_by='l.priority',
-                                      asc_or_desc='asc')
+                                      asc_or_desc='asc',
+                                      where=where)
             col_names = channel_cols + comment_cols
         else:
             result = self.select_from_table(table=self.CHANNEL_TABLE,
                                             columns=','.join(channel_cols),
                                             order_by='priority',
-                                            asc_or_desc='asc')
+                                            asc_or_desc='asc',
+                                            where=where)
             col_names = channel_cols
         for row in result:
             yield self._row_to_dict(row, col_names)
 
-    def add_channel(self, channel_data: Dict) -> None:
+    def add_channel(self, channel_data: Dict, active: bool = True) -> None:
         """ Insert the provided channel into the database"""
 
         try:
             # TODO: Implement if_not_exists=True in HighMySQL
+            if not active:
+                channel_data['active'] = 'FALSE'
             self.insert_into_table(table=self.CHANNEL_TABLE, data=channel_data)
         except Exception as e:
             # TODO: except HighMySQL.mysql.connector.errors.IntegrityError as e:
@@ -90,7 +95,7 @@ class YoutubeMySqlDatastore(HighMySQL):
         priority = int(priority)
         req_priority = priority
         req_channel_id = channel_data['channel_id']
-        channels = list(self.get_channels(channel_cols=['channel_id', 'priority']))
+        channels = list(self.get_channels(channel_cols=['channel_id', 'priority'], where='TRUE'))
         try:
             # Give all channels a temp priority
             for channel in channels:
@@ -161,7 +166,9 @@ class YoutubeMySqlDatastore(HighMySQL):
         """
 
         where_statement = f"channel_id='{ch_id}'"
-        self.delete_from_table(table=self.CHANNEL_TABLE, where=where_statement)
+        self.update_table(table=self.CHANNEL_TABLE,
+                          set_data={'active': 'false'},
+                          where=where_statement)
 
     def remove_channel_by_username(self, ch_username: str) -> None:
         """Delete a channel from the database by its Username
@@ -170,7 +177,9 @@ class YoutubeMySqlDatastore(HighMySQL):
         """
 
         where_statement = f"username='{ch_username}'"
-        self.delete_from_table(table=self.CHANNEL_TABLE, where=where_statement)
+        self.update_table(table=self.CHANNEL_TABLE,
+                          set_data={'active': 'false'},
+                          where=where_statement)
 
     def update_channel_photo(self, channel_id: str, photo_url: str) -> None:
         """
