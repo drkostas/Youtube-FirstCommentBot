@@ -204,7 +204,8 @@ class YoutubeManager(YoutubeApiV3):
         video_ids = [row['video_link'].split("?v=")[-1]
                      for row in self.db.get_comments(comment_cols=['video_link'],
                                                      n_recent=n_recent,
-                                                     min_likes=min_likes, min_replies=min_replies,
+                                                     min_likes=min_likes,
+                                                     min_replies=min_replies,
                                                      only_null_upload=True)]
         for video in self.get_video_info(videos=video_ids):
             video_link = f"https://youtube.com/watch?v={video['video_id']}"
