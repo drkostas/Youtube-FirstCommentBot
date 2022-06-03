@@ -30,7 +30,8 @@ def get_args() -> argparse.Namespace:
     commands = ['commenter', 'accumulator',
                 'add_channel', 'remove_channel', 'list_channels', 'list_comments',
                 'refresh_photos', 'set_priority',
-                'fill_upload_times', 'fill_video_titles', 'fix_comment_links']
+                'fill_upload_times', 'fill_video_titles', 'fix_comment_links',
+                'retrieve_old_channels']
     optional_args.add_argument('-m', '--run-mode', choices=commands,
                                default=commands[0],
                                help='Description of the run modes')
@@ -108,6 +109,10 @@ def fix_comment_links(youtube: YoutubeManager, args: argparse.Namespace) -> None
     youtube.fix_comment_links(args.n_recent, args.min_likes, args.min_replies)
 
 
+def retrieve_old_channels(youtube: YoutubeManager, args: argparse.Namespace) -> None:
+    youtube.retrieve_old_channels(args.n_recent, args.min_likes, args.min_replies)
+
+
 def main():
     """ This is the main function of run.py
 
@@ -137,7 +142,7 @@ def main():
     cloud_conf = None
     if 'cloudstore' in conf_obj.config:  # Optional
         cloud_conf = conf_obj.get_config('cloudstore')[0]
-        emailer_conf = None
+    emailer_conf = None
     if 'emailer' in conf_obj.config:  # Not implemented yet
         emailer_conf = conf_obj.get_config('emailer')[0]
     # Setup YouTube API
