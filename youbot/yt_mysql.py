@@ -236,6 +236,7 @@ class YoutubeMySqlDatastore(HighMySQL):
                      only_null_upload: bool = False,
                      only_null_comment_id: bool = False,
                      only_null_video_title: bool = False,
+                     order_by: str = 'comment_time',
                      join_type: str = 'INNER') -> List[Dict]:
         """
         Get the latest n_recent comments from the comments table.
@@ -249,10 +250,11 @@ class YoutubeMySqlDatastore(HighMySQL):
             only_null_upload:
             only_null_comment_id:
             only_null_video_title:
+            order_by:
             join_type:
         """
 
-        where = f'like_count>={min_likes} AND reply_count>={min_replies} '
+        where = f"like_count>={min_likes} AND reply_count>={min_replies} "
         if channel_id is not None:
             where += f"AND channel_id='{channel_id}' "
         if only_null_upload is True:
@@ -270,7 +272,7 @@ class YoutubeMySqlDatastore(HighMySQL):
                                       join_key_left='channel_id',
                                       join_key_right='channel_id',
                                       where=where,
-                                      order_by='comment_time',
+                                      order_by=order_by,
                                       asc_or_desc='desc',
                                       limit=n_recent,
                                       join_type=join_type)
@@ -279,7 +281,7 @@ class YoutubeMySqlDatastore(HighMySQL):
             result = self.select_from_table(table=self.COMMENTS_TABLE,
                                             columns=','.join(comment_cols),
                                             where=where,
-                                            order_by='comment_time',
+                                            order_by=order_by,
                                             asc_or_desc='desc',
                                             limit=n_recent)
             col_names = comment_cols
