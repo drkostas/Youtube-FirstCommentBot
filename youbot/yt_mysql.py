@@ -54,7 +54,7 @@ class YoutubeMySqlDatastore(HighMySQL):
         self.create_table(table=self.COMMENTS_TABLE, schema=comments_schema)
 
     def get_channels(self, channel_cols: List, comment_cols: List = None,
-                     where: str = 'active IS TRUE') -> List[Dict]:
+                     where: str = 'active IS TRUE', join_type: str = 'INNER') -> List[Dict]:
         """ Retrieve all channels from the database. """
         if comment_cols is not None:
             result = self.select_join(left_table=self.CHANNEL_TABLE,
@@ -65,6 +65,7 @@ class YoutubeMySqlDatastore(HighMySQL):
                                       join_key_right='channel_id',
                                       order_by='l.priority',
                                       asc_or_desc='asc',
+                                      join_type=join_type,
                                       where=where)
             col_names = channel_cols + comment_cols
         else:
@@ -234,7 +235,8 @@ class YoutubeMySqlDatastore(HighMySQL):
                      channel_id: str = None,
                      only_null_upload: bool = False,
                      only_null_comment_id: bool = False,
-                     only_null_video_title: bool = False) -> List[Dict]:
+                     only_null_video_title: bool = False,
+                     join_type: str = 'INNER') -> List[Dict]:
         """
         Get the latest n_recent comments from the comments table.
         Args:
@@ -247,6 +249,7 @@ class YoutubeMySqlDatastore(HighMySQL):
             only_null_upload:
             only_null_comment_id:
             only_null_video_title:
+            join_type:
         """
 
         where = f'like_count>={min_likes} AND reply_count>={min_replies} '
@@ -269,7 +272,8 @@ class YoutubeMySqlDatastore(HighMySQL):
                                       where=where,
                                       order_by='comment_time',
                                       asc_or_desc='desc',
-                                      limit=n_recent)
+                                      limit=n_recent,
+                                      join_type=join_type)
             col_names = comment_cols + channel_cols
         else:
             result = self.select_from_table(table=self.COMMENTS_TABLE,

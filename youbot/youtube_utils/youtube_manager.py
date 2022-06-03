@@ -263,7 +263,19 @@ class YoutubeManager(YoutubeApiV3):
     def refresh_photos(self):
         channel_ids = [channel["channel_id"]
                        for channel in self.db.get_channels(channel_cols=['channel_id'], where='TRUE')]
-        profile_pictures = self.get_profile_pictures(channel_ids)
+        try:
+            profile_pictures = self.get_profile_pictures(channel_ids)
+        except Exception as e:
+            logger.error("One of the channels failed. Trying one by one.")
+            profile_pictures = []
+            for channel_id in channel_ids:
+                try:
+                    profile_picture = self.get_profile_pictures([channel_id])[0]
+                    profile_pictures.append(profile_picture)
+                except Exception as e:
+                    logger.error(f"Channel id: {channel_id} failed. Putting YT picture instead.")
+                    profile_picture = self.get_profile_pictures(['UCBR8-60-B28hp2BmDPdntcQ'])[0]
+                    profile_pictures.append(profile_picture)
         for channel_id, picture_url in profile_pictures:
             self.db.update_channel_photo(channel_id, picture_url)
 
