@@ -226,24 +226,32 @@ class YoutubeApiV3(AbstractYoutubeApi):
         """
 
         if channels is None:
-            profile_pictures_request = self._api.channels().list(
+            profile_pictures_requests = [self._api.channels().list(
                 mine="true",
                 part="snippet",
                 fields='items(id,snippet(thumbnails(default)))'
-            )
+            )]
         else:
-            profile_pictures_request = self._api.channels().list(
-                id=",".join(channels),
-                part="snippet",
-                fields='items(id,snippet(thumbnails(default)))'
-            )
+            channels_list = self.split_list(channels, 50)
+            profile_pictures_requests = []
+            for channels in channels_list:
+                profile_pictures_requests.append(self._api.channels().list(
+                    id=",".join(channels),
+                    part="snippet",
+                    fields='items(id,snippet(thumbnails(default)))'
+                ))
 
-        profile_pictures_response = profile_pictures_request.execute()
+        profile_pictures_responses = []
+        for profile_pictures_request in profile_pictures_requests:
+            profile_pictures_response = profile_pictures_request.execute()
+            profile_pictures_responses.append(profile_pictures_response)
 
         profile_pictures_result = []
-        for profile_picture in profile_pictures_response["items"]:
-            profile_pictures_result.append(
-                (profile_picture["id"], profile_picture["snippet"]["thumbnails"]["default"]["url"]))
+        for profile_pictures_response in profile_pictures_responses:
+            for profile_picture in profile_pictures_response["items"]:
+                profile_pictures_result.append(
+                    (profile_picture["id"],
+                     profile_picture["snippet"]["thumbnails"]["default"]["url"]))
 
         return profile_pictures_result
 
