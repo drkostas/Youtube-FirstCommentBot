@@ -154,17 +154,13 @@ class YoutubeApiV3(AbstractYoutubeApi):
     def get_uploads(self, channels: List, max_posted_hours: int = 2) -> Dict:
         max_channels = 50
         if len(channels) <= max_channels:
-            logger.info("Getting uploads using api 1")
             for upload in self._get_uploads(api=self._apis[0],
                                             channels=channels,
                                             max_posted_hours=max_posted_hours):
                 yield upload
         else:
             channels_lists = self.split_list(channels, max_channels)
-            ind = 0
             for channels, api in zip(channels_lists, self._apis):
-                ind += 1
-                logger.info(f"Getting uploads using api {ind}")
                 for upload in self._get_uploads(api=api,
                                                 channels=channels,
                                                 max_posted_hours=max_posted_hours):
