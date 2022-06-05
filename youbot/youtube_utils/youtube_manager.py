@@ -95,15 +95,12 @@ class YoutubeManager(YoutubeApiV3):
                 if self.dbox is not None:
                     self.upload_logs()
                 loop_cnt = 0
-            # Load necessary data
-            latest_videos = self.get_uploads(channels=channel_ids,
-                                             max_posted_hours=self.max_posted_hours)
             comments_added = []
             # Sort the videos by the priority of the channels (channel_ids are sorted by priority)
             # and comment in the videos not already commented
             try:
-                for video in sorted(latest_videos,
-                                    key=lambda _video: channel_ids.index(_video["channel_id"])):
+                for video in self.get_uploads(channels=channel_ids,
+                                              max_posted_hours=self.max_posted_hours):
                     video_url = f'https://youtube.com/watch?v={video["id"]}'
                     if video_url not in video_links_commented:
                         comment_text = \
@@ -188,51 +185,45 @@ class YoutubeManager(YoutubeApiV3):
             else:
                 sleep_time = self.default_sleep_time
 
-    def get_comments(self, n_recent, channel_ids):
-        comment_cols = ['channel_id', 'video_link', 'comment', 'comment_time']
-        commented_comments = {}
-        video_links_commented = []
-        for channel_id in channel_ids:
-            commented_comments[channel_id] = list(self.db.get_comments(comment_cols=comment_cols,
-                                                                       channel_id=channel_id,
-                                                                       n_recent=n_recent))
-            video_links_commented += [comment['video_link'] for comment in
-                                      commented_comments[channel_id]]
-        return commented_comments, video_links_commented
+    def list_channels(self) -> None:
+        channels = [[row["priority"], row["username"].title(), row["channel_id"],
+                     arrow.get(row["added_on"]).humanize(),
+                     arrow.get(row["last_commented"]).humanize(),
+                     row["channel_photo"]
+                     ]
+                    for row in self.db.get_channels(
+                channel_cols=['priority', 'username', 'channel_id', 'added_on', 'last_commented',
+                              'channel_photo'])]
 
-    def fill_upload_times(self, n_recent, min_likes, min_replies):
-        video_ids = [row['video_link'].split("?v=")[-1]
-                     for row in self.db.get_comments(comment_cols=['video_link'],
-                                                     n_recent=n_recent,
-                                                     min_likes=min_likes,
-                                                     min_replies=min_replies,
-                                                     only_null_upload=True)]
-        for video in self.get_video_info(videos=video_ids):
-            video_link = f"https://youtube.com/watch?v={video['video_id']}"
-            self.db.update_comment(video_link=video_link,
-                                   upload_time=video['upload_time'])
+        headers = ['Priority', 'Channel Name', 'Channel ID', 'Added On', 'Last Commented',
+                   'Channel Photo']
+        self.pretty_print(headers, channels)
 
-    def fix_comment_links(self, n_recent, min_likes, min_replies):
-        video_info = [
-            (row['video_link'].split("?v=")[-1], row['comment_id'])
-            for row in self.db.get_comments(comment_cols=['video_link', 'comment_id'],
-                                            n_recent=n_recent,
-                                            min_likes=min_likes, min_replies=min_replies)]
-        for video_id, comment_id in video_info:
-            video_link = f"https://youtube.com/watch?v={video_id}"
-            self.db.update_comment(video_link=video_link,
-                                   comment_id=comment_id)
+    def list_comments(self, n_recent: int = 50, min_likes: int = -1,
+                      min_replies: int = -1) -> None:
+        comment_cols = ['comment_time', 'upload_time', 'comment_time', 'like_count',
+                        'reply_count', 'comment_link', 'comment']
+        channel_cols = ['username']
+        comments = []
+        for row in self.db.get_comments(comment_cols=comment_cols, channel_cols=channel_cols,
+                                        n_recent=n_recent,
+                                        min_likes=min_likes, min_replies=min_replies):
+            username = row["username"].title()
+            comment_time = arrow.get(row["comment_time"]).humanize()
+            if row["upload_time"] != "-1" and row["upload_time"] != "None":
+                upload_seconds_passed = int(
+                    arrow.get(row["upload_time"]).humanize(granularity='second').split(" ")[0])
+                comment_seconds_passed = int(
+                    arrow.get(row["comment_time"]).humanize(granularity='second').split(" ")[0])
+                late = upload_seconds_passed - comment_seconds_passed
+            else:
+                late = -1
+            comments.append([username, row["comment"], comment_time,
+                             late, row["like_count"], row["reply_count"], row["comment_link"]])
 
-    def fill_video_titles(self, n_recent, min_likes, min_replies):
-        video_ids = [row['video_link'].split("?v=")[-1]
-                     for row in self.db.get_comments(comment_cols=['video_link'],
-                                                     n_recent=n_recent,
-                                                     min_likes=min_likes, min_replies=min_replies,
-                                                     only_null_video_title=True)]
-        for video in self.get_video_info(videos=video_ids):
-            video_link = f"https://youtube.com/watch?v={video['video_id']}"
-            self.db.update_comment(video_link=video_link,
-                                   video_title=video['video_title'])
+            headers = ['Channel', 'Comment', 'Comment Time', 'Seconds Late', 'Likes', 'Replies',
+                       'Comment URL']
+            self.pretty_print(headers, comments)
 
     def add_channel(self, channel_id: str = None,
                     username: str = None,
@@ -280,17 +271,6 @@ class YoutubeManager(YoutubeApiV3):
         for channel_id, picture_url in profile_pictures:
             self.db.update_channel_photo(channel_id, picture_url)
 
-    def retrieve_old_channels(self, n_recent, min_likes, min_replies):
-        commented_channel_ids = [comment["channel_id"]
-                                 for comment in self.db.get_comments(comment_cols=['channel_id'],
-                                                                     n_recent=n_recent)]
-        current_channel_ids = [channel["channel_id"]
-                               for channel in self.db.get_channels(channel_cols=['channel_id'],
-                                                                   where='TRUE')]
-        for channel_id in set(commented_channel_ids):
-            if channel_id not in current_channel_ids:
-                self.add_channel(channel_id=channel_id, active=False)
-
     def set_priority(self, channel_id: str = None, username: str = None, priority: str = None) -> None:
         if channel_id:
             channel_info = self.get_channel_info_by_id(channel_id)
@@ -305,45 +285,64 @@ class YoutubeManager(YoutubeApiV3):
         else:
             raise YoutubeManagerError("Channel not found!")
 
-    def list_channels(self) -> None:
-        channels = [[row["priority"], row["username"].title(), row["channel_id"],
-                     arrow.get(row["added_on"]).humanize(),
-                     arrow.get(row["last_commented"]).humanize(),
-                     row["channel_photo"]
-                     ]
-                    for row in self.db.get_channels(
-                channel_cols=['priority', 'username', 'channel_id', 'added_on', 'last_commented',
-                              'channel_photo'])]
+    def fill_upload_times(self, n_recent, min_likes, min_replies):
+        video_ids = [row['video_link'].split("?v=")[-1]
+                     for row in self.db.get_comments(comment_cols=['video_link'],
+                                                     n_recent=n_recent,
+                                                     min_likes=min_likes,
+                                                     min_replies=min_replies,
+                                                     only_null_upload=True)]
+        for video in self.get_video_info(videos=video_ids):
+            video_link = f"https://youtube.com/watch?v={video['video_id']}"
+            self.db.update_comment(video_link=video_link,
+                                   upload_time=video['upload_time'])
 
-        headers = ['Priority', 'Channel Name', 'Channel ID', 'Added On', 'Last Commented',
-                   'Channel Photo']
-        self.pretty_print(headers, channels)
+    def fix_comment_links(self, n_recent, min_likes, min_replies):
+        video_info = [
+            (row['video_link'].split("?v=")[-1], row['comment_id'])
+            for row in self.db.get_comments(comment_cols=['video_link', 'comment_id'],
+                                            n_recent=n_recent,
+                                            min_likes=min_likes, min_replies=min_replies)]
+        for video_id, comment_id in video_info:
+            video_link = f"https://youtube.com/watch?v={video_id}"
+            self.db.update_comment(video_link=video_link,
+                                   comment_id=comment_id)
 
-    def list_comments(self, n_recent: int = 50, min_likes: int = -1,
-                      min_replies: int = -1) -> None:
-        comment_cols = ['comment_time', 'upload_time', 'comment_time', 'like_count',
-                        'reply_count', 'comment_link', 'comment']
-        channel_cols = ['username']
-        comments = []
-        for row in self.db.get_comments(comment_cols=comment_cols, channel_cols=channel_cols,
-                                        n_recent=n_recent,
-                                        min_likes=min_likes, min_replies=min_replies):
-            username = row["username"].title()
-            comment_time = arrow.get(row["comment_time"]).humanize()
-            if row["upload_time"] != "-1" and row["upload_time"] != "None":
-                upload_seconds_passed = int(
-                    arrow.get(row["upload_time"]).humanize(granularity='second').split(" ")[0])
-                comment_seconds_passed = int(
-                    arrow.get(row["comment_time"]).humanize(granularity='second').split(" ")[0])
-                late = upload_seconds_passed - comment_seconds_passed
-            else:
-                late = -1
-            comments.append([username, row["comment"], comment_time,
-                             late, row["like_count"], row["reply_count"], row["comment_link"]])
+    def fill_video_titles(self, n_recent, min_likes, min_replies):
+        video_ids = [row['video_link'].split("?v=")[-1]
+                     for row in self.db.get_comments(comment_cols=['video_link'],
+                                                     n_recent=n_recent,
+                                                     min_likes=min_likes, min_replies=min_replies,
+                                                     only_null_video_title=True)]
+        for video in self.get_video_info(videos=video_ids):
+            video_link = f"https://youtube.com/watch?v={video['video_id']}"
+            self.db.update_comment(video_link=video_link,
+                                   video_title=video['video_title'])
 
-            headers = ['Channel', 'Comment', 'Comment Time', 'Seconds Late', 'Likes', 'Replies',
-                       'Comment URL']
-            self.pretty_print(headers, comments)
+    def retrieve_old_channels(self, n_recent, min_likes, min_replies):
+        commented_channel_ids = [comment["channel_id"]
+                                 for comment in self.db.get_comments(comment_cols=['channel_id'],
+                                                                     n_recent=n_recent,
+                                                                     min_likes=min_likes,
+                                                                     min_replies=min_replies)]
+        current_channel_ids = [channel["channel_id"]
+                               for channel in self.db.get_channels(channel_cols=['channel_id'],
+                                                                   where='TRUE')]
+        for channel_id in set(commented_channel_ids):
+            if channel_id not in current_channel_ids:
+                self.add_channel(channel_id=channel_id, active=False)
+
+    def get_comments(self, n_recent, channel_ids):
+        comment_cols = ['channel_id', 'video_link', 'comment', 'comment_time']
+        commented_comments = {}
+        video_links_commented = []
+        for channel_id in channel_ids:
+            commented_comments[channel_id] = list(self.db.get_comments(comment_cols=comment_cols,
+                                                                       channel_id=channel_id,
+                                                                       n_recent=n_recent))
+            video_links_commented += [comment['video_link'] for comment in
+                                      commented_comments[channel_id]]
+        return commented_comments, video_links_commented
 
     def load_template_comments(self):
         if self.comments_conf is None:
