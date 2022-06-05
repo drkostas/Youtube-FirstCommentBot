@@ -151,7 +151,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
         return self._yt_to_channel_dict(channels_response)
 
     def get_uploads(self, channels: List, max_posted_hours: int = 2) -> Dict:
-        max_channels = 45
+        max_channels = 50
         if len(channels) <= max_channels:
             for upload in self._get_uploads(api=self._apis[0],
                                             channels=channels,
