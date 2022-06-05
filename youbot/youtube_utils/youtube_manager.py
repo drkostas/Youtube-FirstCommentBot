@@ -118,7 +118,10 @@ class YoutubeManager(YoutubeApiV3):
                 errors += 1
                 error_txt = f"Exception in the main loop of the Commenter:\n{e}"
                 logger.error(error_txt)
+                apis = self._apis
+                self._apis = [self._apis[0]]  # Fix by using only first api
                 if errors > 5:
+                    self._apis = apis
                     sleep_time = self.seconds_until_next_hour()
                     logger.error(f"Will sleep until next hour ({sleep_time} seconds)")
                     self.upload_logs()
