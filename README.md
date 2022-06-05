@@ -90,6 +90,7 @@ References:
       + Click Advanced -> "Go to <name> (unsafe)"
       + Click Continue
     + Your Credentials are set up!
+    + (*Warning*: The default quota limit per day is around 10,000 which is only enough for having 2 channels. You should request a quota increase if you want more.)
 - MySQL: If you don't ha DB already, you can create one for free with Amazon RDS:
   [Reference 1](https://aws.amazon.com/rds/free/),
   [Reference 2](https://bigdataenthusiast.wordpress.com/2016/03/05/aws-rds-instance-setup-oracle-db-on-cloud-free-tier/)
