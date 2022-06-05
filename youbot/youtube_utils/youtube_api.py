@@ -18,7 +18,7 @@ logger = ColorLogger(logger_name='YoutubeApi', color='green')
 
 
 class AbstractYoutubeApi(ABC):
-    __slots__ = ('channel_name', 'channel_id', '_api', 'tag')
+    __slots__ = ('channel_name', 'channel_id', '_apis', 'tag')
 
     @abstractmethod
     def __init__(self, config: Dict, tag: str) -> None:
@@ -29,12 +29,15 @@ class AbstractYoutubeApi(ABC):
         """
 
         self.tag = tag
-        self._api = self._build_api(
-            client_id=config['client_id'],
-            client_secret=config['client_secret'],
-            api_version=config['api_version'],
-            read_only_scope=config['read_only_scope'],
-            tag=self.tag)
+        self._apis = []
+        for cr_ind, creds in enumerate(config['credentials']):
+            _api = self._build_api(
+                client_id=creds['client_id'],
+                client_secret=creds['client_secret'],
+                api_version=config['api_version'],
+                read_only_scope=config['read_only_scope'],
+                tag=f'{self.tag}_{cr_ind}')
+            self._apis.append(_api)
         self.channel_name, self.channel_id = self._get_my_username_and_id()
 
     @staticmethod
@@ -70,21 +73,22 @@ class YoutubeApiV3(AbstractYoutubeApi):
 
         flow = OAuth2WebServerFlow(client_id=client_id,
                                    client_secret=client_secret,
+                                   redirect_uri='http://localhost',  # Add this to GCloud(web oath)
                                    scope=read_only_scope)
         base_path = os.path.dirname(os.path.abspath(__file__))
         key_path = os.path.join(base_path, '../../', 'keys', f'{tag}.json')
         storage = Storage(key_path)
         credentials = storage.get()
-
         if credentials is None or credentials.invalid:
-            flags = argparser.parse_args(args=['--noauth_local_webserver'])
+            args = []  # ['--noauth_local_webserver']
+            flags = argparser.parse_args(args=args)
             credentials = run_flow(flow, storage, flags)
 
         api = build('youtube', api_version, http=credentials.authorize(httplib2.Http()))
         return api
 
     def _get_my_username_and_id(self) -> Tuple[str, str]:
-        channels_response = self._api.channels().list(
+        channels_response = self._apis[0].channels().list(
             part="snippet",
             fields='items(id,snippet(title))',
             mine='true'
@@ -117,7 +121,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
             username (str): The username to search for
         """
 
-        channels_response = self._api.channels().list(
+        channels_response = self._apis[0].channels().list(
             forUsername=username,
             part="snippet",
             fields='items(id,snippet(title))'
@@ -138,7 +142,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
             channel_id (str): The channel ID to search for
         """
 
-        channels_response = self._api.channels().list(
+        channels_response = self._apis[0].channels().list(
             id=channel_id,
             part="snippet",
             fields='items(id,snippet(title))'
@@ -147,6 +151,21 @@ class YoutubeApiV3(AbstractYoutubeApi):
         return self._yt_to_channel_dict(channels_response)
 
     def get_uploads(self, channels: List, max_posted_hours: int = 2) -> Dict:
+        max_channels = 45
+        if len(channels) <= max_channels:
+            for upload in self._get_uploads(api=self._apis[0],
+                                            channels=channels,
+                                            max_posted_hours=max_posted_hours):
+                yield upload
+        else:
+            channels_lists = self.split_list(channels, max_channels)
+            for channels, api in zip(channels_lists, self._apis):
+                for upload in self._get_uploads(api=api,
+                                                channels=channels,
+                                                max_posted_hours=max_posted_hours):
+                    yield upload
+
+    def _get_uploads(self, api, channels: List, max_posted_hours: int = 2) -> Dict:
         """ Retrieves new uploads for the specified channels.
 
         Args:
@@ -159,7 +178,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
         channels_to_check = []
         # Get the Playlist IDs of each channel
         for channels in channels_lists:
-            channels_response = self._api.channels().list(
+            channels_response = api.channels().list(
                 id=",".join(channels),
                 part="contentDetails,snippet",
                 fields="items(id,contentDetails(relatedPlaylists(uploads)),snippet(title))"
@@ -168,7 +187,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
         # For each playlist ID, get 50 videos
         for channel in channels_to_check:
             uploads_list_id = channel["contentDetails"]["relatedPlaylists"]["uploads"]
-            for upload in self._get_uploads_playlist(uploads_list_id, max_posted_hours):
+            for upload in self._get_uploads_playlist(api, uploads_list_id, max_posted_hours):
                 upload['channel_title'] = channel['snippet']['title']
                 upload['channel_id'] = channel['id']
                 yield upload
@@ -186,7 +205,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
         video_id = re.search(r"^.*(youtu\.be\/|vi?\/|u\/\w\/|embed\/|\?vi?=|\&vi?=)([^#\&\?]*).*",
                              url).group(2)
         page_token = ""  # "&pageToken={}".format(page_token)
-        comment_threads_response = self._api.commentThreads().list(
+        comment_threads_response = self._apis[0].commentThreads().list(
             part="snippet",
             maxResults=100,
             videoId="{}{}".format(video_id, page_token),
@@ -226,7 +245,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
         """
 
         if channels is None:
-            profile_pictures_requests = [self._api.channels().list(
+            profile_pictures_requests = [self._apis[0].channels().list(
                 mine="true",
                 part="snippet",
                 fields='items(id,snippet(thumbnails(default)))'
@@ -235,7 +254,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
             channels_list = self.split_list(channels, 50)
             profile_pictures_requests = []
             for channels in channels_list:
-                profile_pictures_requests.append(self._api.channels().list(
+                profile_pictures_requests.append(self._apis[0].channels().list(
                     id=",".join(channels),
                     part="snippet",
                     fields='items(id,snippet(thumbnails(default)))'
@@ -260,7 +279,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
         videos_found = []
         # Get the Playlist IDs of each channel
         for videos in videos_lists:
-            channels_response = self._api.videos().list(
+            channels_response = self._apis[0].videos().list(
                 id=",".join(videos),
                 part="contentDetails,snippet",
                 fields="items(id,snippet(channelId,publishedAt,title))"
@@ -317,16 +336,19 @@ class YoutubeApiV3(AbstractYoutubeApi):
 
         return output_list
 
-    def _get_uploads_playlist(self, uploads_list_id: str, max_posted_hours: int = 2) -> Dict:
+    @staticmethod
+    def _get_uploads_playlist(api, uploads_list_id: str, max_posted_hours: int = 2) -> Dict:
         """ Retrieves uploads using the specified playlist ID which were had been added
         since the last check.
 
         Args:
+            api:
             uploads_list_id (str): The ID of the uploads playlist
+            max_posted_hours:
         """
 
         # Construct the request
-        playlist_items_request = self._api.playlistItems().list(
+        playlist_items_request = api.playlistItems().list(
             playlistId=uploads_list_id,
             part="snippet",
             fields='items(id,snippet(title,publishedAt,resourceId(videoId)))',
@@ -348,7 +370,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
                 else:
                     return
 
-            playlist_items_request = self._api.playlistItems().list_next(
+            playlist_items_request = api.playlistItems().list_next(
                 playlist_items_request, playlist_items_response
             )
 
@@ -361,7 +383,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
 
         resource = self._build_resource(properties)
         kwargs = self._remove_empty_kwargs(**kwargs)
-        response = self._api.commentThreads().insert(body=resource, **kwargs).execute()
+        response = self._apis[0].commentThreads().insert(body=resource, **kwargs).execute()
         return response
 
     @staticmethod

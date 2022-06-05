@@ -71,13 +71,25 @@ References:
     + Visit the [developer console](https://console.cloud.google.com/apis/dashboard)
     + Create a new project
     + Open the [API Manager](https://console.developers.google.com/apis/)
-    + Enable YouTube Data API v3
+      + Enable YouTube Data API v3
+    + Go to [Consent](https://console.cloud.google.com/apis/credentials/consent)
+      + Create a new OAuth client ID
+      + Configure the OAuth consent screen
+      + Use Type: External
+      + Provide a client name (e.g. YoutubeBot)
+      + Fill in the support email and developer contact information sections
+      + Click Continue and add the youtube.force-ssl scope
+      + Click Save and Continue again and go back to dashboard
+      + Click Publish App in the consent section (testing only lasts for 10 days)
     + Go to [Credentials](https://console.cloud.google.com/apis/credentials)
-    + Configure the OAuth consent screen and create OAuth client ID credentials
-    + Use Application Type Other and provide a client name (e.g. YoutubeBot)
-    + Confirm and download the generated credentials as JSON file
-    + Store the file in the `keys` folder 3 times as `keys/generic.json`, `keys/commenter.json`
-      , `keys/accumulator.json`
+      + Type: Web Application
+      + Authorized Redirect URIs: http://localhost:8080/
+      + Copy Client ID and secret to the respective vars in your config file
+    + The first time you use the credentials the app will redirect you to a webpage
+      + Login with the Google account you used
+      + Click Advanced -> "Go to <name> (unsafe)"
+      + Click Continue
+    + Your Credentials are set up!
 - MySQL: If you don't ha DB already, you can create one for free with Amazon RDS:
   [Reference 1](https://aws.amazon.com/rds/free/),
   [Reference 2](https://bigdataenthusiast.wordpress.com/2016/03/05/aws-rds-instance-setup-oracle-db-on-cloud-free-tier/)
