@@ -26,7 +26,7 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [X] Add Video Title
 - [X] Recreate the Livestreaming module (In different private repo, will merge them at some point)
 - [X] Use multiple accounts (different api keys) to check for new comments
-- [ ] Instead of retrieving the playlist id everytime, load it only every few epochs and cache it
+- [X] Instead of retrieving the playlist id everytime, load when we need it
 - [ ] Make get_video_comments() more efficient by loading 50 comments at a time
 - [ ] In add_comment() use foreign keys to update the channels table and save time
 - [ ] Optimize get_next_template_comment()

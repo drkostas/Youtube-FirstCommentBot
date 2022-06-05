@@ -53,7 +53,7 @@ class YoutubeManager(YoutubeApiV3):
         if self.api_type == 'simulated':
             self.get_uploads = self.simulate_uploads
         else:
-            self.get_uploads = super(self).get_uploads
+            self.get_uploads = super().get_uploads
         self.keys_path = config['keys_path']
         self.log_path = log_path
         self.comment_search_term = None
