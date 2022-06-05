@@ -379,13 +379,13 @@ class YoutubeManager(YoutubeApiV3):
         # Build the comments pool
         if channel_id in self.template_comments:
             available_comments = self.template_comments[channel_id] + available_comments
-        random.shuffle(available_comments)
         # Extract unique comments commented
         unique_com_coms = set(data['comment'] for data in commented_comments)
-        new_comments = set(available_comments) - unique_com_coms
+        new_comments = list(set(available_comments) - unique_com_coms)
+        random.shuffle(new_comments)
         if new_comments:  # If we have new template comments
             comment = next(iter(new_comments))
-        else:  # Otherwise, pick the oldest one (with duplicate handling
+        else:  # Otherwise, pick the oldest one (with duplicate handling)
             comment_dates = {}
             for unique_comment in unique_com_coms:
                 comment_dates[unique_comment] = parser.parse('1994-04-30T08:00:00.000000')
