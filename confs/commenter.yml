@@ -12,6 +12,8 @@ youtube:
       credentials:
         - client_id: !ENV ${CLIENT_ID_COMM}  # YouTube client ID (see Readme)
           client_secret: !ENV ${CLIENT_SECRET_COMM}  # YouTube client secret (see Readme)
+        - client_id: !ENV ${CLIENT_ID_COMM_2}  # YouTube client ID (see Readme)
+          client_secret: !ENV ${CLIENT_SECRET_COMM_@}  # YouTube client secret (see Readme)
       api_version: v3
       read_only_scope: https://www.googleapis.com/auth/youtube.force-ssl
       username: !ENV ${USERNAME_COMM}  # Can be omitted (automatically derived). Useful when you are using a different api key for the accumulator
