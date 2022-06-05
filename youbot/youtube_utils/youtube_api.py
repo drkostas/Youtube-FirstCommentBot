@@ -18,7 +18,7 @@ logger = ColorLogger(logger_name='YoutubeApi', color='green')
 
 
 class AbstractYoutubeApi(ABC):
-    __slots__ = ('channel_name', 'channel_id', '_apis', 'tag')
+    __slots__ = ('channel_name', 'channel_id', '_apis', 'tag', 'playlist_ids')
 
     @abstractmethod
     def __init__(self, config: Dict, tag: str) -> None:
@@ -28,6 +28,7 @@ class AbstractYoutubeApi(ABC):
         :param config:
         """
 
+        self.channel_playlists = None
         self.tag = tag
         self._apis = []
         for cr_ind, creds in enumerate(config['credentials']):
@@ -173,24 +174,42 @@ class YoutubeApiV3(AbstractYoutubeApi):
             max_posted_hours:
         """
 
+        def iter_uploads(channel_playlists, _api, _max_posted_hours):
+            # TODO: maybe pop the playlists yielded for error handling?
+            for playlist in channel_playlists.values():
+                playlist_id = playlist["contentDetails"]["relatedPlaylists"]["uploads"]
+                for _upload in self._get_uploads_playlist(_api, playlist_id, _max_posted_hours):
+                    _upload['channel_title'] = playlist['snippet']['title']
+                    _upload['channel_id'] = playlist['id']
+                    yield _upload
+
         # Separate the channels list in 50-sized channel lists
-        channels_lists = self.split_list(channels, 50)
-        channels_to_check = []
-        # Get the Playlist IDs of each channel
+        # channels_lists = self.split_list(channels, 50)  # Redundant
+        channels_lists = [channels]
+        if self.channel_playlists is None:
+            self._refresh_playlists(channels_lists)
+        # For each playlist ID, get 50 videos
+        try:
+            for upload in iter_uploads(self.channel_playlists, api, max_posted_hours):
+                yield upload
+        except Exception as e:
+            logger.warn(e)
+            logger.warn("Refreshing Playlists and retrying..")
+            self._refresh_playlists(channels_lists)
+            for upload in iter_uploads(self.channel_playlists, api, max_posted_hours):
+                yield upload
+
+    def _refresh_playlists(self, channels_lists):
+        playlist_ids_lst = []
         for channels in channels_lists:
-            channels_response = api.channels().list(
+            channels_response = self._apis[0].channels().list(
                 id=",".join(channels),
                 part="contentDetails,snippet",
                 fields="items(id,contentDetails(relatedPlaylists(uploads)),snippet(title))"
             ).execute()
-            channels_to_check.extend(channels_response["items"])
-        # For each playlist ID, get 50 videos
-        for channel in channels_to_check:
-            uploads_list_id = channel["contentDetails"]["relatedPlaylists"]["uploads"]
-            for upload in self._get_uploads_playlist(api, uploads_list_id, max_posted_hours):
-                upload['channel_title'] = channel['snippet']['title']
-                upload['channel_id'] = channel['id']
-                yield upload
+            playlist_ids_lst.extend(channels_response["items"])
+        channels_flat = [channel for channels in channels_lists for channel in channels]
+        self.channel_playlists = dict(zip(channels_flat, playlist_ids_lst))
 
     def get_video_comments(self, url: str, search_terms: str = None) -> List:
         """ Populates a list with comments (and their replies).
