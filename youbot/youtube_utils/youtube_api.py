@@ -371,7 +371,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
             playlistId=uploads_list_id,
             part="snippet",
             fields='items(id,snippet(title,publishedAt,resourceId(videoId)))',
-            maxResults=50
+            maxResults=10
         )
 
         while playlist_items_request:
