@@ -52,6 +52,8 @@ class YoutubeManager(YoutubeApiV3):
         self.crashed_file = os.path.join(base_path, '../../.crashed')
         if self.api_type == 'simulated':
             self.get_uploads = self.simulate_uploads
+        else:
+            self.get_uploads = super(self).get_uploads
         self.keys_path = config['keys_path']
         self.log_path = log_path
         self.comment_search_term = None
