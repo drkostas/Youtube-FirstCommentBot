@@ -1,5 +1,6 @@
 # TODO
 See the [issues](https://github.com/drkostas/youbot/issues) too.
+## Done
 - [X] Load starter
 - [X] Get channel name automatically
 - [X] Build YouTube Manager class
@@ -27,10 +28,12 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [X] Recreate the Livestreaming module (In different private repo, will merge them at some point)
 - [X] Use multiple accounts (different api keys) to check for new comments
 - [X] Instead of retrieving the playlist id everytime, load when we need it
+## Important Features
+- [ ] Send me email on fatal error (on later version)
+- [ ] Email me if there are replies mentioning the word "bot"
+## Secondary
 - [ ] Make get_video_comments() more efficient by loading 50 comments at a time
 - [ ] In add_comment() use foreign keys to update the channels table and save time
 - [ ] Optimize get_next_template_comment()
 - [ ] Add more tests
-- [ ] Send me email on fatal error (on later version)
-- [ ] Email me if there are replies mentioning the word "bot"
 - [ ] For very fast lookups using Redis would be optimal but an overkill at this point

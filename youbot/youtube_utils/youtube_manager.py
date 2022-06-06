@@ -77,6 +77,7 @@ class YoutubeManager(YoutubeApiV3):
         sleep_time = 0
         loop_cnt = 0
         errors = 0
+        apis = self._apis
         self.load_template_comments()
         channel_ids = [channel['channel_id'] for channel in
                        self.db.get_channels(channel_cols=['channel_id'])]
@@ -94,6 +95,7 @@ class YoutubeManager(YoutubeApiV3):
                 channel_ids = [channel['channel_id'] for channel in
                                self.db.get_channels(channel_cols=['channel_id'])]
                 self.load_template_comments()
+                self._apis = apis  # Retry the failed apis
                 if self.dbox is not None:
                     self.upload_logs()
                 loop_cnt = 0
@@ -118,7 +120,6 @@ class YoutubeManager(YoutubeApiV3):
                 errors += 1
                 error_txt = f"Exception in the main loop of the Commenter:\n{e}"
                 logger.error(error_txt)
-                apis = self._apis
                 self._apis = [self._apis[0]]  # Fix by using only first api
                 if errors > 5:
                     self._apis = apis
