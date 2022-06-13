@@ -35,6 +35,7 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [ ] Send me email on fatal error (on later version)
 - [ ] Email me if there are replies mentioning the word "bot"
 ## Secondary
+- [ ] Add seconds late column and update with accumulator
 - [ ] Make get_video_comments() more efficient by loading 50 comments at a time
 - [ ] In add_comment() use foreign keys to update the channels table and save time
 - [ ] Optimize get_next_template_comment()
