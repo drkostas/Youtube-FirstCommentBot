@@ -31,6 +31,7 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [X] Slow Mode: Reduce check time in specific times (eg midnight to 6am)
 - [X] Add option for channel to only use channel comments (when available)
 ## Important Features
+- [ ] Mandatory timeout per channel
 - [ ] Threading to get batches of new videos in parallel
 - [ ] Send me email on fatal error (on later version)
 - [ ] Email me if there are replies mentioning the word "bot"
