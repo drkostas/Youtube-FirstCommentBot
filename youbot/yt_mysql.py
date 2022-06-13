@@ -31,6 +31,7 @@ class YoutubeMySqlDatastore(HighMySQL):
             channel_photo  varchar(100) default '-1' null,
             active             tinyint(1)   default 1    not null,
             self_comments_only tinyint(1)   default 0    not null,
+            delay_comment      int          default 0    not null,
             constraint id_pk PRIMARY KEY (channel_id),
             constraint channel_id unique (channel_id),
             constraint priority unique (priority),

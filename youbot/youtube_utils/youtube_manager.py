@@ -84,6 +84,9 @@ class YoutubeManager(YoutubeApiV3):
                        self.db.get_channels(channel_cols=['channel_id'])]
         self_comments_flags_lst = [channel['self_comments_only'] for channel in
                                    self.db.get_channels(channel_cols=['self_comments_only'])]
+        delay_comment_lst = [channel['delay_comment'] for channel in
+                             self.db.get_channels(channel_cols=['delay_comment'])]
+        delay_comment = dict(zip(channel_ids, delay_comment_lst))
         self_comments_flags = dict(zip(channel_ids, self_comments_flags_lst))
         _, video_links_commented = self.get_comments(channel_ids=channel_ids,
                                                      n_recent=500)
@@ -113,6 +116,7 @@ class YoutubeManager(YoutubeApiV3):
             # Sort the videos by the priority of the channels (channel_ids are sorted by priority)
             # and comment in the videos not already commented
             try:
+                loop_start = time.time()
                 for video in self.get_uploads(channels=channel_ids,
                                               max_posted_hours=self.max_posted_hours):
                     video_url = f'https://youtube.com/watch?v={video["id"]}'
@@ -123,6 +127,10 @@ class YoutubeManager(YoutubeApiV3):
                                                            self_comments_flags=self_comments_flags)
                         self.comment(video_id=video["id"], comment_text=comment_text)
                         # Add the info of the new comment to be added in the DB after this loop
+                        curr_loop_time = time.time() - loop_start
+                        if curr_loop_time < delay_comment[video["channel_id"]]:
+                            ch_delay = int(delay_comment[video["channel_id"]]-curr_loop_time)
+                            time.sleep(ch_delay)
                         video_links_commented.append(video_url)
                         comments_added.append((video, video_url, comment_text,
                                                datetime.utcnow().isoformat()))
@@ -240,7 +248,7 @@ class YoutubeManager(YoutubeApiV3):
             comments.append([username, row["comment"], comment_time,
                              late, row["like_count"], row["reply_count"], row["comment_link"]])
 
-            headers = ['Channel', 'Comment', 'Comment Time', 'Seconds Late', 'Likes', 'Replies',
+            headers = ['Channel', 'Comment', 'Comment At', 'Latency', 'Likes', 'Replies',
                        'Comment URL']
             self.pretty_print(headers, comments)
 
@@ -494,8 +502,10 @@ class YoutubeManager(YoutubeApiV3):
         col_widths = [0] * len(headers)
         for row in output:
             for idx, column in enumerate(row):
-                if len(str(column)) > 100:
-                    row[idx] = row[idx][:94] + " (...)"
+                if len(str(column)) > 54 and idx != 6:
+                    row[idx] = row[idx][:50] + "(..)"
+                elif idx == 0 and len(str(column)) > 22:
+                    row[idx] = row[idx][:18] + "(..)"
                 if len(str(row[idx])) > col_widths[idx]:
                     col_widths[idx] = len(row[idx])
 
