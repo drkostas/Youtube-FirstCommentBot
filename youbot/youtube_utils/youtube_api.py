@@ -153,6 +153,9 @@ class YoutubeApiV3(AbstractYoutubeApi):
 
     def get_uploads(self, channels: List, max_posted_hours: int = 2) -> Dict:
         max_channels = 50
+        # Refresh playlists if needed
+        if self.channel_playlists is None:
+            self._refresh_playlists(channels)
         if len(channels) <= max_channels:
             for upload in self._get_uploads(api=self._apis[0],
                                             channels=channels,
@@ -180,18 +183,19 @@ class YoutubeApiV3(AbstractYoutubeApi):
 
         def iter_uploads(channel_playlists, _api, _max_posted_hours):
             # TODO: maybe pop the playlists yielded for error handling?
-            for playlist in channel_playlists.values():
+            for ch_id, playlist in channel_playlists.items():
                 playlist_id = playlist["contentDetails"]["relatedPlaylists"]["uploads"]
-                for _upload in self._get_uploads_playlist(_api, playlist_id, _max_posted_hours):
-                    _upload['channel_title'] = playlist['snippet']['title']
-                    _upload['channel_id'] = playlist['id']
-                    yield _upload
+                for _upload in self._get_uploads_playlist(_api, ch_id, playlist_id, _max_posted_hours):
+                    try:
+                        _upload['channel_title'] = playlist['snippet']['title']
+                        _upload['channel_id'] = playlist['id']
+                        yield _upload
+                    except Exception as e:
+                        logger.error(f"playlist_id: {e} not found")
 
         # Separate the channels list in 50-sized channel lists
         # channels_lists = self.split_list(channels, 50)  # Redundant
         channels_lists = [channels]
-        if self.channel_playlists is None:
-            self._refresh_playlists(channels_lists)
         # For each playlist ID, get 50 videos
         try:
             for upload in iter_uploads(self.channel_playlists, api, max_posted_hours):
@@ -205,13 +209,22 @@ class YoutubeApiV3(AbstractYoutubeApi):
 
     def _refresh_playlists(self, channels_lists):
         playlist_ids_lst = []
+        if len(channels_lists) > 50:
+            channels_lists = self.split_list(channels_lists, 50)
         for channels in channels_lists:
-            channels_response = self._apis[0].channels().list(
-                id=",".join(channels),
-                part="contentDetails,snippet",
-                fields="items(id,contentDetails(relatedPlaylists(uploads)),snippet(title))"
-            ).execute()
-            playlist_ids_lst.extend(channels_response["items"])
+            try:
+                channels_response = self._apis[0].channels().list(
+                    id=",".join(channels),
+                    part="contentDetails,snippet",
+                    fields="items(id,contentDetails(relatedPlaylists(uploads)),snippet(title))"
+                ).execute()
+                channels_response = [item for item in channels_response["items"]
+                                     if item['snippet']['title'] != '']
+                playlist_ids_lst.extend(channels_response)
+            except Exception as e:
+                logger.error("Error refreshing some playlists..")
+                logger.error(e)
+                continue
         channels_flat = [channel for channels in channels_lists for channel in channels]
         self.channel_playlists = dict(zip(channels_flat, playlist_ids_lst))
 
@@ -359,13 +372,14 @@ class YoutubeApiV3(AbstractYoutubeApi):
 
         return output_list
 
-    @staticmethod
-    def _get_uploads_playlist(api, uploads_list_id: str, max_posted_hours: int = 2) -> Dict:
+    def _get_uploads_playlist(self, api, ch_id:str, uploads_list_id: str,
+                              max_posted_hours: int = 2) -> Dict:
         """ Retrieves uploads using the specified playlist ID which were had been added
         since the last check.
 
         Args:
             api:
+            ch_id (str):
             uploads_list_id (str): The ID of the uploads playlist
             max_posted_hours:
         """
@@ -379,23 +393,31 @@ class YoutubeApiV3(AbstractYoutubeApi):
         )
 
         while playlist_items_request:
-            playlist_items_response = playlist_items_request.execute()
-            for playlist_item in playlist_items_response["items"]:
-                published_at = dateutil.parser.parse(playlist_item['snippet']['publishedAt'])
-                video = dict()
-                # Return the video only if it was published in the last `last_n_hours` hours
-                if published_at >= (datetime.utcnow() - timedelta(hours=max_posted_hours)).replace(
-                        tzinfo=timezone.utc):
-                    video['id'] = playlist_item["snippet"]["resourceId"]["videoId"]
-                    video['published_at'] = playlist_item["snippet"]["publishedAt"]
-                    video['title'] = playlist_item["snippet"]["title"]
-                    yield video
-                else:
-                    return
+            try:
+                playlist_items_response = playlist_items_request.execute()
+                for playlist_item in playlist_items_response["items"]:
+                    published_at = dateutil.parser.parse(playlist_item['snippet']['publishedAt'])
+                    video = dict()
+                    # Return the video only if it was published in the last `last_n_hours` hours
+                    if published_at >= (datetime.utcnow() - timedelta(hours=max_posted_hours)).replace(
+                            tzinfo=timezone.utc):
+                        video['id'] = playlist_item["snippet"]["resourceId"]["videoId"]
+                        video['published_at'] = playlist_item["snippet"]["publishedAt"]
+                        video['title'] = playlist_item["snippet"]["title"]
+                        yield video
+                    else:
+                        return
 
-            playlist_items_request = api.playlistItems().list_next(
-                playlist_items_request, playlist_items_response
-            )
+                playlist_items_request = api.playlistItems().list_next(
+                    playlist_items_request, playlist_items_response
+                )
+            except Exception as e:
+                try:
+                    if ch_id in self.channel_playlists:
+                        logger.error(f"Skipping upload list {uploads_list_id} for channel {ch_id}..")
+                        del self.channel_playlists[ch_id]
+                except Exception as e:
+                    logger.error(e)
 
     def _comment_threads_insert(self, properties: Dict, **kwargs: Any) -> Dict:
         """ Comment using the YouTube API.
