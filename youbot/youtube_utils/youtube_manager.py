@@ -16,13 +16,13 @@ logger = ColorLogger(logger_name='YoutubeManager', color='cyan')
 
 class YoutubeManager(YoutubeApiV3):
     __slots__ = ('db', 'dbox', 'comments_conf', 'default_sleep_time', 'fast_sleep_time',
-                 'max_posted_hours', 'api_type',
+                 'slow_sleep_time', 'max_posted_hours', 'api_type',
                  'template_comments', 'log_path', 'reload_data_every', 'keys_path',
                  'dbox_logs_folder_path', 'dbox_keys_folder_path', 'comments_src',
                  'comment_search_term', 'crashed_file', 'num_comments_to_check')
 
     def __init__(self, config: Dict, db_conf: Dict, cloud_conf: Dict, comments_conf: Dict,
-                 sleep_time: int, fast_sleep_time: int, max_posted_hours: int,
+                 sleep_time: int, fast_sleep_time: int, slow_sleep_time: int, max_posted_hours: int,
                  api_type: str, tag: str, log_path: str):
         global logger
         logger = ColorLogger(logger_name=f'[{tag}] YoutubeManager', color='cyan')
@@ -45,6 +45,7 @@ class YoutubeManager(YoutubeApiV3):
                                           "but `cloudstore` config is not set!")
         self.default_sleep_time = sleep_time
         self.fast_sleep_time = fast_sleep_time
+        self.slow_sleep_time = slow_sleep_time
         self.max_posted_hours = max_posted_hours
         self.api_type = api_type
         self.template_comments = {}
@@ -81,6 +82,9 @@ class YoutubeManager(YoutubeApiV3):
         self.load_template_comments()
         channel_ids = [channel['channel_id'] for channel in
                        self.db.get_channels(channel_cols=['channel_id'])]
+        self_comments_flags_lst = [channel['self_comments_only'] for channel in
+                                   self.db.get_channels(channel_cols=['self_comments_only'])]
+        self_comments_flags = dict(zip(channel_ids, self_comments_flags_lst))
         commented_comments, video_links_commented = self.get_comments(channel_ids=channel_ids,
                                                                       min_likes=5,
                                                                       n_recent=500)
@@ -95,6 +99,9 @@ class YoutubeManager(YoutubeApiV3):
             if (loop_cnt > self.reload_data_every and sleep_time > 1) or sleep_time > 600:
                 channel_ids = [channel['channel_id'] for channel in
                                self.db.get_channels(channel_cols=['channel_id'])]
+                self_comments_flags_lst = [channel['self_comments_only'] for channel in
+                                           self.db.get_channels(channel_cols=['self_comments_only'])]
+                self_comments_flags = dict(zip(channel_ids, self_comments_flags_lst))
                 self.load_template_comments()
                 self._apis = apis  # Retry the failed apis
                 if self.dbox is not None:
@@ -110,7 +117,8 @@ class YoutubeManager(YoutubeApiV3):
                     if video_url not in video_links_commented:
                         comment_text = \
                             self.get_next_template_comment(channel_id=video["channel_id"],
-                                                           commented_comments=commented_comments)
+                                                           commented_comments=commented_comments,
+                                                           self_comments_flags=self_comments_flags)
                         self.comment(video_id=video["id"], comment_text=comment_text)
                         # Add the info of the new comment to be added in the DB after this loop
                         video_links_commented.append(video_url)
@@ -129,7 +137,9 @@ class YoutubeManager(YoutubeApiV3):
                     self.upload_logs()
                     loop_cnt = 0
             else:
-                if datetime.today().minute >= 59 or datetime.today().minute <= 0:
+                if 4 <= datetime.utcnow().hour <= 11:
+                    sleep_time = self.slow_sleep_time
+                elif datetime.utcnow().minute >= 58 or datetime.utcnow().minute <= 1:
                     sleep_time = self.fast_sleep_time  # check every second when close to new hour
                 else:
                     sleep_time = self.default_sleep_time
@@ -375,13 +385,19 @@ class YoutubeManager(YoutubeApiV3):
                 with open(file) as f:
                     self.template_comments[file_name] = [_f.rstrip() for _f in f.readlines()]
 
-    def get_next_template_comment(self, channel_id: str, commented_comments: Dict) -> str:
+    def get_next_template_comment(self, channel_id: str,
+                                  commented_comments: Dict,
+                                  self_comments_flags: Dict) -> str:
         """ TODO: Probably much more efficient with numpy or sql. """
         commented_comments = commented_comments[channel_id]
+        self_comments_flags = self_comments_flags[channel_id]
         available_comments = self.template_comments['default'].copy()
         # Build the comments pool
         if channel_id in self.template_comments:
-            available_comments = self.template_comments[channel_id] + available_comments
+            if self_comments_flags == 1:
+                available_comments = self.template_comments[channel_id]
+            else:
+                available_comments = self.template_comments[channel_id] + available_comments
         # Extract unique comments commented
         unique_com_coms = set(data['comment'] for data in commented_comments)
         new_comments = list(set(available_comments) - unique_com_coms)
@@ -490,9 +506,20 @@ class YoutubeManager(YoutubeApiV3):
 
     @staticmethod
     def seconds_until_next_hour() -> int:
-        delta = timedelta(hours=1)
+        hot_minute_start = 5
+        hot_minute_end = 55
         now = datetime.now()
-        next_hour = (now + delta).replace(microsecond=0, second=0, minute=2)
+        now_minute = now.minute
+        if hot_minute_start <= now_minute <= hot_minute_end:
+            minute = now_minute
+            delta = timedelta(hours=1)
+        elif now_minute <= hot_minute_start:
+            minute = hot_minute_end
+            delta = timedelta(hours=0)
+        else:
+            minute = hot_minute_end
+            delta = timedelta(hours=1)
+        next_hour = (now + delta).replace(microsecond=0, second=0, minute=minute)
         return (next_hour - now).seconds
 
     @staticmethod
