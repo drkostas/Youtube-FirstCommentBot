@@ -128,8 +128,8 @@ class YoutubeManager(YoutubeApiV3):
                         self.comment(video_id=video["id"], comment_text=comment_text)
                         # Add the info of the new comment to be added in the DB after this loop
                         curr_loop_time = time.time() - loop_start
-                        if curr_loop_time < delay_comment[video["channel_id"]]:
-                            ch_delay = int(delay_comment[video["channel_id"]]-curr_loop_time)
+                        if curr_loop_time < delay_comment[video["channel_id"]]-sleep_time:
+                            ch_delay = int(delay_comment[video["channel_id"]]-curr_loop_time-sleep_time)
                             time.sleep(ch_delay)
                         video_links_commented.append(video_url)
                         comments_added.append((video, video_url, comment_text,
@@ -220,9 +220,8 @@ class YoutubeManager(YoutubeApiV3):
                      ]
                     for row in self.db.get_channels(
                 channel_cols=['priority', 'username', 'channel_id', 'added_on', 'last_commented',
-                              'channel_photo'])]
-
-        headers = ['Priority', 'Channel Name', 'Channel ID', 'Added On', 'Last Commented',
+                              'delay_comment', 'channel_photo'])]
+        headers = ['Priority', 'Channel Name', 'Channel ID', 'Added On', 'Last Commented', 'Delay',
                    'Channel Photo']
         self.pretty_print(headers, channels)
 
@@ -504,8 +503,6 @@ class YoutubeManager(YoutubeApiV3):
             for idx, column in enumerate(row):
                 if len(str(column)) > 54 and idx != 6:
                     row[idx] = row[idx][:50] + "(..)"
-                elif idx == 0 and len(str(column)) > 22:
-                    row[idx] = row[idx][:18] + "(..)"
                 if len(str(row[idx])) > col_widths[idx]:
                     col_widths[idx] = len(row[idx])
 

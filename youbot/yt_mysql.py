@@ -65,7 +65,7 @@ class YoutubeMySqlDatastore(HighMySQL):
                                       right_columns=','.join(comment_cols),
                                       join_key_left='channel_id',
                                       join_key_right='channel_id',
-                                      order_by='l.priority',
+                                      order_by='l.delay_comment, l.priority',
                                       asc_or_desc='asc',
                                       join_type=join_type,
                                       where=where)
@@ -73,7 +73,7 @@ class YoutubeMySqlDatastore(HighMySQL):
         else:
             result = self.select_from_table(table=self.CHANNEL_TABLE,
                                             columns=','.join(channel_cols),
-                                            order_by='priority',
+                                            order_by='delay_comment, priority',
                                             asc_or_desc='asc',
                                             where=where)
             col_names = channel_cols
