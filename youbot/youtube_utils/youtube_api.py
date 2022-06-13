@@ -11,7 +11,7 @@ from oauth2client.client import OAuth2WebServerFlow
 import googleapiclient
 from googleapiclient.discovery import build
 import httplib2
-
+from itertools import islice, cycle
 from youbot import ColorLogger
 
 logger = ColorLogger(logger_name='YoutubeApi', color='green')
@@ -160,7 +160,11 @@ class YoutubeApiV3(AbstractYoutubeApi):
                 yield upload
         else:
             channels_lists = self.split_list(channels, max_channels)
-            for channels, api in zip(channels_lists, self._apis):
+            if len(self._apis) < len(channels_lists):
+                apis = list(islice(cycle(self._apis), len(channels_lists)))
+            else:
+                apis = self._apis
+            for channels, api in zip(channels_lists, apis):
                 for upload in self._get_uploads(api=api,
                                                 channels=channels,
                                                 max_posted_hours=max_posted_hours):
