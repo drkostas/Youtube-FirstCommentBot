@@ -85,9 +85,11 @@ class YoutubeManager(YoutubeApiV3):
         self_comments_flags_lst = [channel['self_comments_only'] for channel in
                                    self.db.get_channels(channel_cols=['self_comments_only'])]
         self_comments_flags = dict(zip(channel_ids, self_comments_flags_lst))
-        commented_comments, video_links_commented = self.get_comments(channel_ids=channel_ids,
-                                                                      min_likes=5,
-                                                                      n_recent=500)
+        _, video_links_commented = self.get_comments(channel_ids=channel_ids,
+                                                     n_recent=500)
+        commented_comments, _ = self.get_comments(channel_ids=channel_ids,
+                                                  min_likes=5,
+                                                  n_recent=500)
         # Start the main loop
         while True:
             time.sleep(sleep_time)
