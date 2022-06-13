@@ -29,6 +29,8 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [X] Use multiple accounts (different api keys) to check for new comments
 - [X] Instead of retrieving the playlist id everytime, load when we need it
 ## Important Features
+- [ ] Slow Mode: Reduce check time in specific times (eg midnight to 6am)
+- [ ] Add option for channel to not use default comments
 - [ ] Send me email on fatal error (on later version)
 - [ ] Email me if there are replies mentioning the word "bot"
 ## Secondary
