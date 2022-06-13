@@ -231,7 +231,9 @@ class YoutubeMySqlDatastore(HighMySQL):
     def get_comments(self, comment_cols: List[str], channel_cols: List[str] = None,
                      n_recent: int = 50,
                      min_likes: int = -1,
+                     max_likes: int = 999999,
                      min_replies: int = -1,
+                     max_replies: int = 999999,
                      channel_id: str = None,
                      only_null_upload: bool = False,
                      only_null_comment_id: bool = False,
@@ -245,7 +247,9 @@ class YoutubeMySqlDatastore(HighMySQL):
             channel_cols:
             n_recent:
             min_likes:
+            max_likes:
             min_replies:
+            max_replies:
             channel_id:
             only_null_upload:
             only_null_comment_id:
@@ -254,7 +258,8 @@ class YoutubeMySqlDatastore(HighMySQL):
             join_type:
         """
 
-        where = f"like_count>={min_likes} AND reply_count>={min_replies} "
+        where = f"like_count>={min_likes} AND reply_count>={min_replies} AND " \
+                f"like_count<={max_likes} AND reply_count<={max_replies} "
         if channel_id is not None:
             where += f"AND channel_id='{channel_id}' "
         if only_null_upload is True:
