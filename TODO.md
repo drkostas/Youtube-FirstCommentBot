@@ -28,9 +28,10 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [X] Recreate the Livestreaming module (In different private repo, will merge them at some point)
 - [X] Use multiple accounts (different api keys) to check for new comments
 - [X] Instead of retrieving the playlist id everytime, load when we need it
+- [X] Slow Mode: Reduce check time in specific times (eg midnight to 6am)
+- [X] Add option for channel to only use channel comments (when available)
 ## Important Features
-- [ ] Slow Mode: Reduce check time in specific times (eg midnight to 6am)
-- [ ] Add option for channel to not use default comments
+- [ ] Threading to get batches of new videos in parallel
 - [ ] Send me email on fatal error (on later version)
 - [ ] Email me if there are replies mentioning the word "bot"
 ## Secondary

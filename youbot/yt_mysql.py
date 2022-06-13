@@ -29,6 +29,8 @@ class YoutubeMySqlDatastore(HighMySQL):
             last_commented varchar(100)              not null,
             priority       int auto_increment,
             channel_photo  varchar(100) default '-1' null,
+            active             tinyint(1)   default 1    not null,
+            self_comments_only tinyint(1)   default 0    not null,
             constraint id_pk PRIMARY KEY (channel_id),
             constraint channel_id unique (channel_id),
             constraint priority unique (priority),
@@ -47,8 +49,7 @@ class YoutubeMySqlDatastore(HighMySQL):
             comment_link varchar(100) default '-1' null,
             video_title varchar(255) default '-1' null,
             constraint video_link_pk PRIMARY KEY (video_link),
-            constraint video_link     unique (video_link),
-            constraint channel_id foreign key (channel_id) references channels (channel_id) on update cascade on delete cascade"""
+            constraint video_link     unique (video_link)"""
 
         self.create_table(table=self.CHANNEL_TABLE, schema=channels_schema)
         self.create_table(table=self.COMMENTS_TABLE, schema=comments_schema)
