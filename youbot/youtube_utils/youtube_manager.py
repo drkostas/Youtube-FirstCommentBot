@@ -82,6 +82,7 @@ class YoutubeManager(YoutubeApiV3):
         channel_ids = [channel['channel_id'] for channel in
                        self.db.get_channels(channel_cols=['channel_id'])]
         commented_comments, video_links_commented = self.get_comments(channel_ids=channel_ids,
+                                                                      min_likes=5,
                                                                       n_recent=500)
         # Start the main loop
         while True:
@@ -338,14 +339,15 @@ class YoutubeManager(YoutubeApiV3):
             if channel_id not in current_channel_ids:
                 self.add_channel(channel_id=channel_id, active=False)
 
-    def get_comments(self, n_recent, channel_ids):
+    def get_comments(self, n_recent, channel_ids, min_likes: int = -1):
         comment_cols = ['channel_id', 'video_link', 'comment', 'comment_time']
         commented_comments = {}
         video_links_commented = []
         for channel_id in channel_ids:
             commented_comments[channel_id] = list(self.db.get_comments(comment_cols=comment_cols,
                                                                        channel_id=channel_id,
-                                                                       n_recent=n_recent))
+                                                                       n_recent=n_recent,
+                                                                       min_likes=min_likes))
             video_links_commented += [comment['video_link'] for comment in
                                       commented_comments[channel_id]]
         return commented_comments, video_links_commented
