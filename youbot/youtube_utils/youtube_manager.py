@@ -96,8 +96,8 @@ class YoutubeManager(YoutubeApiV3):
         sleep_time_prev = -1  # Define a different value than sleep_time so it prints the first time
         # Start the main loop
         while True:
-            if sleep_time != sleep_time_prev:
-                logger.info(f'New sleep time: {sleep_time}')
+            #if sleep_time != sleep_time_prev:
+            logger.info(f'New sleep time: {sleep_time}')
             sleep_time_prev = sleep_time
             time.sleep(sleep_time)
             # Reload stuff and upload logs
