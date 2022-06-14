@@ -75,6 +75,7 @@ class YoutubeManager(YoutubeApiV3):
             raise YoutubeManagerError("Crashed flag has been raised. Fix the error and delete "
                                       "the .crashed file manually before restarting the code.")
         # Initialize
+        logger.info("Initializing..")
         sleep_time = self.default_sleep_time
         loop_cnt = 0
         errors = 0
@@ -94,18 +95,17 @@ class YoutubeManager(YoutubeApiV3):
                                                   min_likes=5,
                                                   n_recent=500)
         sleep_time_prev = -1  # Define a different value than sleep_time so it prints the first time
+        logger.info("Done")
         # Start the main loop
         while True:
-            # if sleep_time != sleep_time_prev:
-            logger.info(f'New sleep time: {sleep_time}')
+            if sleep_time != sleep_time_prev:
+                logger.info(f'New sleep time: {sleep_time}')
             sleep_time_prev = sleep_time
             time.sleep(sleep_time)
             # Reload stuff and upload logs
-            # (not if in fast mode where sleep=1)
-            # (always reload if sleep time>5' which will probably
-            # be caused by sleep_until_next_next_hour())
             loop_cnt += 1
-            if (loop_cnt > self.reload_data_every and sleep_time > 1) or sleep_time > 600:
+            if (loop_cnt > self.reload_data_every and sleep_time > self.fast_sleep_time) \
+                    or sleep_time > self.slow_sleep_time:
                 logger.info("Refreshing data..")
                 channel_ids = [channel['channel_id'] for channel in
                                self.db.get_channels(channel_cols=['channel_id'])]
@@ -119,6 +119,7 @@ class YoutubeManager(YoutubeApiV3):
                 loop_cnt = 0
                 logger.info("Done")
             comments_added = []
+            added_comment = False  # Flag to check if commented on raised error
             # Sort the videos by the priority of the channels (channel_ids are sorted by priority)
             # and comment in the videos not already commented
             try:
@@ -131,7 +132,8 @@ class YoutubeManager(YoutubeApiV3):
                             self.get_next_template_comment(channel_id=video["channel_id"],
                                                            commented_comments=commented_comments,
                                                            self_comments_flags=self_comments_flags)
-                        # self.comment(video_id=video["id"], comment_text=comment_text)
+                        self.comment(video_id=video["id"], comment_text=comment_text)
+                        added_comment = True
                         # Add the info of the new comment to be added in the DB after this loop
                         curr_loop_time = time.time() - loop_start
                         if curr_loop_time < delay_comment[video["channel_id"]] - sleep_time:
@@ -146,7 +148,8 @@ class YoutubeManager(YoutubeApiV3):
                                                datetime.utcnow().isoformat()))
                 errors = 0
             except Exception as e:
-                raise e
+                if added_comment is True:  # Raise fatal exception if error after commented
+                    self.raise_fatal(e, 'Error after leaving a comment')
                 errors += 1
                 error_txt = f"Exception in the main loop of the Commenter:\n{e}"
                 logger.error(error_txt)
@@ -177,13 +180,9 @@ class YoutubeManager(YoutubeApiV3):
                                                                     'video_link': video_url,
                                                                     'comment': comment_text,
                                                                     'comment_time': comment_time})
-                    logger.info(f"New comment: {video_url}")
+                    logger.info(f"Added comment: {video_url}")
             except Exception as e:
-                # Create file that prevents restarting
-                self.touch(self.crashed_file)
-                error_txt = f"FatalMySQL error while storing comment:\n{e}"
-                logger.error(error_txt)
-                raise e
+                self.raise_fatal(e, 'FatalMySQL error while storing comment')
 
     def accumulator(self):
         # Initialize
@@ -460,6 +459,13 @@ class YoutubeManager(YoutubeApiV3):
             if file[-5:] == '.json':
                 self.dbox.download_file(f'{self.dbox_keys_folder_path}/{file}',
                                         f'{self.keys_path}/{file}')
+
+    def raise_fatal(self, e, txt):
+        # Create file that prevents restarting
+        self.touch(self.crashed_file)
+        error_txt = f"{txt}:\n{e}"
+        logger.error(error_txt)
+        raise e
 
     def simulate_uploads(self, channels: List, max_posted_hours: int = 2) -> Dict:
         """ Generates new uploads for the specified channels.
