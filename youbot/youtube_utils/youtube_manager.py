@@ -96,7 +96,7 @@ class YoutubeManager(YoutubeApiV3):
         sleep_time_prev = -1  # Define a different value than sleep_time so it prints the first time
         # Start the main loop
         while True:
-            #if sleep_time != sleep_time_prev:
+            # if sleep_time != sleep_time_prev:
             logger.info(f'New sleep time: {sleep_time}')
             sleep_time_prev = sleep_time
             time.sleep(sleep_time)
@@ -131,11 +131,12 @@ class YoutubeManager(YoutubeApiV3):
                             self.get_next_template_comment(channel_id=video["channel_id"],
                                                            commented_comments=commented_comments,
                                                            self_comments_flags=self_comments_flags)
-                        self.comment(video_id=video["id"], comment_text=comment_text)
+                        # self.comment(video_id=video["id"], comment_text=comment_text)
                         # Add the info of the new comment to be added in the DB after this loop
                         curr_loop_time = time.time() - loop_start
-                        if curr_loop_time < delay_comment[video["channel_id"]]-sleep_time:
-                            ch_delay = int(delay_comment[video["channel_id"]]-curr_loop_time-sleep_time)
+                        if curr_loop_time < delay_comment[video["channel_id"]] - sleep_time:
+                            ch_delay = int(
+                                delay_comment[video["channel_id"]] - curr_loop_time - sleep_time)
                             logger.info(f"Requested Delay: {delay_comment[video['channel_id']]}")
                             logger.info(f"Seconds Passed: {curr_loop_time}")
                             logger.info(f"Sleeping for extra: {ch_delay}")
@@ -145,6 +146,7 @@ class YoutubeManager(YoutubeApiV3):
                                                datetime.utcnow().isoformat()))
                 errors = 0
             except Exception as e:
+                raise e
                 errors += 1
                 error_txt = f"Exception in the main loop of the Commenter:\n{e}"
                 logger.error(error_txt)
