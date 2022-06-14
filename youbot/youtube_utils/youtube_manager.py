@@ -70,6 +70,18 @@ class YoutubeManager(YoutubeApiV3):
         if 'username' in config:
             self.channel_name = config['username']
 
+    def _get_channel_data(self):
+        channel_data = list(self.db.get_channels(channel_cols=['channel_id',
+                                                               'self_comments_only',
+                                                               'delay_comment', 'priority'],
+                                                 complex_sort_key=3))
+        channel_ids = [channel['channel_id'] for channel in channel_data]
+        self_comments_flags_lst = [channel['self_comments_only'] for channel in channel_data]
+        delay_comment_lst = [channel['delay_comment'] for channel in channel_data]
+        self_comments_flags = dict(zip(channel_ids, self_comments_flags_lst))
+        delay_comment = dict(zip(channel_ids, delay_comment_lst))
+        return channel_ids, self_comments_flags, delay_comment
+
     def commenter(self):
         if os.path.exists(self.crashed_file):
             raise YoutubeManagerError("Crashed flag has been raised. Fix the error and delete "
@@ -81,14 +93,7 @@ class YoutubeManager(YoutubeApiV3):
         errors = 0
         apis = self._apis
         self.load_template_comments()
-        channel_ids = [channel['channel_id'] for channel in
-                       self.db.get_channels(channel_cols=['channel_id'])]
-        self_comments_flags_lst = [channel['self_comments_only'] for channel in
-                                   self.db.get_channels(channel_cols=['self_comments_only'])]
-        delay_comment_lst = [channel['delay_comment'] for channel in
-                             self.db.get_channels(channel_cols=['delay_comment'])]
-        delay_comment = dict(zip(channel_ids, delay_comment_lst))
-        self_comments_flags = dict(zip(channel_ids, self_comments_flags_lst))
+        channel_ids, self_comments_flags, delay_comment = self._get_channel_data()
         _, video_links_commented = self.get_comments(channel_ids=channel_ids,
                                                      n_recent=500)
         commented_comments, _ = self.get_comments(channel_ids=channel_ids,
@@ -107,11 +112,7 @@ class YoutubeManager(YoutubeApiV3):
             if (loop_cnt > self.reload_data_every and sleep_time > self.fast_sleep_time) \
                     or sleep_time > self.slow_sleep_time:
                 logger.info("Refreshing data..")
-                channel_ids = [channel['channel_id'] for channel in
-                               self.db.get_channels(channel_cols=['channel_id'])]
-                self_comments_flags_lst = [channel['self_comments_only'] for channel in
-                                           self.db.get_channels(channel_cols=['self_comments_only'])]
-                self_comments_flags = dict(zip(channel_ids, self_comments_flags_lst))
+                channel_ids, self_comments_flags, delay_comment = self._get_channel_data()
                 self.load_template_comments()
                 self._apis = apis  # Retry the failed apis
                 if self.dbox is not None:
