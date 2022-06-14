@@ -150,10 +150,18 @@ class YoutubeManager(YoutubeApiV3):
             except Exception as e:
                 if added_comment is True:  # Raise fatal exception if error after commented
                     self.raise_fatal(e, 'Error after leaving a comment')
-                errors += 1
-                error_txt = f"Exception in the main loop of the Commenter:\n{e}"
-                logger.error(error_txt)
-                self._apis = [self._apis[0]]  # Fix by using only first api
+                elif 'SERVICE_UNAVAILABLE' in str(e):
+                    logger.warn("YT Service unavailable..")
+                elif 'quotaExceeded' in str(e):
+                    logger.warn(f"Quota Exceeded..")
+                    if len(self._apis) > 1:
+                        self._apis = [self._apis[0]]  # Fix by using only first api
+                    else:
+                        errors += 1
+                else:
+                    error_txt = f"Unknown Exception in the main loop:\n{e}"
+                    logger.error(error_txt)
+                    errors += 1
                 if errors > 5:
                     self._apis = apis
                     sleep_time = self.seconds_until_next_hour()
