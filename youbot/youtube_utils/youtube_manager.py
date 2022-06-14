@@ -93,7 +93,7 @@ class YoutubeManager(YoutubeApiV3):
         commented_comments, _ = self.get_comments(channel_ids=channel_ids,
                                                   min_likes=5,
                                                   n_recent=500)
-        sleep_time_prev = sleep_time
+        sleep_time_prev = -1  # Define a different value than sleep_time so it prints the first time
         # Start the main loop
         while True:
             if sleep_time != sleep_time_prev:
@@ -106,6 +106,7 @@ class YoutubeManager(YoutubeApiV3):
             # be caused by sleep_until_next_next_hour())
             loop_cnt += 1
             if (loop_cnt > self.reload_data_every and sleep_time > 1) or sleep_time > 600:
+                logger.info("Refreshing data..")
                 channel_ids = [channel['channel_id'] for channel in
                                self.db.get_channels(channel_cols=['channel_id'])]
                 self_comments_flags_lst = [channel['self_comments_only'] for channel in
@@ -116,6 +117,7 @@ class YoutubeManager(YoutubeApiV3):
                 if self.dbox is not None:
                     self.upload_logs()
                 loop_cnt = 0
+                logger.info("Done")
             comments_added = []
             # Sort the videos by the priority of the channels (channel_ids are sorted by priority)
             # and comment in the videos not already commented
@@ -134,6 +136,9 @@ class YoutubeManager(YoutubeApiV3):
                         curr_loop_time = time.time() - loop_start
                         if curr_loop_time < delay_comment[video["channel_id"]]-sleep_time:
                             ch_delay = int(delay_comment[video["channel_id"]]-curr_loop_time-sleep_time)
+                            logger.info(f"Requested Delay: {delay_comment[video['channel_id']]}")
+                            logger.info(f"Seconds Passed: {curr_loop_time}")
+                            logger.info(f"Sleeping for extra: {ch_delay}")
                             time.sleep(ch_delay)
                         video_links_commented.append(video_url)
                         comments_added.append((video, video_url, comment_text,
