@@ -75,7 +75,7 @@ class YoutubeManager(YoutubeApiV3):
             raise YoutubeManagerError("Crashed flag has been raised. Fix the error and delete "
                                       "the .crashed file manually before restarting the code.")
         # Initialize
-        sleep_time = 0
+        sleep_time = self.default_sleep_time
         loop_cnt = 0
         errors = 0
         apis = self._apis
