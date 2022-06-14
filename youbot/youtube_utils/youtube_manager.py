@@ -93,8 +93,12 @@ class YoutubeManager(YoutubeApiV3):
         commented_comments, _ = self.get_comments(channel_ids=channel_ids,
                                                   min_likes=5,
                                                   n_recent=500)
+        sleep_time_prev = sleep_time
         # Start the main loop
         while True:
+            if sleep_time != sleep_time_prev:
+                logger.info(f'New sleep time: {sleep_time}')
+            sleep_time_prev = sleep_time
             time.sleep(sleep_time)
             # Reload stuff and upload logs
             # (not if in fast mode where sleep=1)
@@ -166,6 +170,7 @@ class YoutubeManager(YoutubeApiV3):
                                                                     'video_link': video_url,
                                                                     'comment': comment_text,
                                                                     'comment_time': comment_time})
+                    logger.info(f"New comment: {video_url}")
             except Exception as e:
                 # Create file that prevents restarting
                 self.touch(self.crashed_file)
