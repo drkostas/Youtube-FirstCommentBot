@@ -33,6 +33,7 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [X] Mandatory timeout per channel
 ## Important Features
 - [ ] Threading to get batches of new videos in parallel
+- [ ] Make error catching more specific
 - [ ] Send me email on fatal error (on later version)
 - [ ] Email me if there are replies mentioning the word "bot"
 ## Secondary

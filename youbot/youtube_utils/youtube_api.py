@@ -183,9 +183,11 @@ class YoutubeApiV3(AbstractYoutubeApi):
 
         def iter_uploads(channel_playlists, _api, _max_posted_hours):
             # TODO: maybe pop the playlists yielded for error handling?
-            for ch_id, playlist in channel_playlists.items():
+            for ch_id, playlist in list(channel_playlists.items()):
                 playlist_id = playlist["contentDetails"]["relatedPlaylists"]["uploads"]
                 for _upload in self._get_uploads_playlist(_api, ch_id, playlist_id, _max_posted_hours):
+                    if _upload is None:
+                        continue
                     try:
                         _upload['channel_title'] = playlist['snippet']['title']
                         _upload['channel_id'] = playlist['id']
@@ -372,7 +374,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
 
         return output_list
 
-    def _get_uploads_playlist(self, api, ch_id:str, uploads_list_id: str,
+    def _get_uploads_playlist(self, api, ch_id: str, uploads_list_id: str,
                               max_posted_hours: int = 2) -> Dict:
         """ Retrieves uploads using the specified playlist ID which were had been added
         since the last check.
@@ -392,32 +394,32 @@ class YoutubeApiV3(AbstractYoutubeApi):
             maxResults=10
         )
 
-        while playlist_items_request:
-            try:
-                playlist_items_response = playlist_items_request.execute()
-                for playlist_item in playlist_items_response["items"]:
-                    published_at = dateutil.parser.parse(playlist_item['snippet']['publishedAt'])
-                    video = dict()
-                    # Return the video only if it was published in the last `last_n_hours` hours
-                    if published_at >= (datetime.utcnow() - timedelta(hours=max_posted_hours)).replace(
-                            tzinfo=timezone.utc):
-                        video['id'] = playlist_item["snippet"]["resourceId"]["videoId"]
-                        video['published_at'] = playlist_item["snippet"]["publishedAt"]
-                        video['title'] = playlist_item["snippet"]["title"]
-                        yield video
-                    else:
-                        return
+        try:
+            playlist_items_response = playlist_items_request.execute()
+            for playlist_item in playlist_items_response["items"]:
+                published_at = dateutil.parser.parse(playlist_item['snippet']['publishedAt'])
+                video = dict()
+                # Return the video only if it was published in the last `last_n_hours` hours
+                if published_at >= (datetime.utcnow() - timedelta(hours=max_posted_hours)).replace(
+                        tzinfo=timezone.utc):
+                    video['id'] = playlist_item["snippet"]["resourceId"]["videoId"]
+                    video['published_at'] = playlist_item["snippet"]["publishedAt"]
+                    video['title'] = playlist_item["snippet"]["title"]
+                    yield video
+                else:
+                    yield None
 
-                playlist_items_request = api.playlistItems().list_next(
-                    playlist_items_request, playlist_items_response
-                )
-            except Exception as e:
-                try:
-                    if ch_id in self.channel_playlists:
-                        logger.error(f"Skipping upload list {uploads_list_id} for channel {ch_id}..")
-                        del self.channel_playlists[ch_id]
-                except Exception as e:
+            playlist_items_request = api.playlistItems().list_next(
+                playlist_items_request, playlist_items_response
+            )
+        except Exception as e:
+            try:
+                if ch_id in self.channel_playlists:
                     logger.error(e)
+                    logger.error(f"Skipping upload list {uploads_list_id} for channel {ch_id}..")
+                    del self.channel_playlists[ch_id]
+            except Exception as e:
+                logger.error(e)
 
     def _comment_threads_insert(self, properties: Dict, **kwargs: Any) -> Dict:
         """ Comment using the YouTube API.
