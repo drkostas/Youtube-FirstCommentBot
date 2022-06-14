@@ -56,7 +56,9 @@ class YoutubeMySqlDatastore(HighMySQL):
         self.create_table(table=self.COMMENTS_TABLE, schema=comments_schema)
 
     def get_channels(self, channel_cols: List, comment_cols: List = None,
-                     where: str = 'active IS TRUE', join_type: str = 'INNER') -> List[Dict]:
+                     where: str = 'active IS TRUE',
+                     join_type: str = 'INNER',
+                     complex_sort_key: int = None) -> List[Dict]:
         """ Retrieve all channels from the database. """
         if comment_cols is not None:
             result = self.select_join(left_table=self.CHANNEL_TABLE,
@@ -70,15 +72,34 @@ class YoutubeMySqlDatastore(HighMySQL):
                                       join_type=join_type,
                                       where=where)
             col_names = channel_cols + comment_cols
-        else:
+        elif complex_sort_key is None:
             result = self.select_from_table(table=self.CHANNEL_TABLE,
                                             columns=','.join(channel_cols),
                                             order_by='delay_comment, priority',
                                             asc_or_desc='asc',
                                             where=where)
             col_names = channel_cols
-        for row in result:
-            yield self._row_to_dict(row, col_names)
+            for row in result:
+                yield self._row_to_dict(row, col_names)
+        else:
+            max_key = -1
+            while True:
+                table = f'(SELECT * ' \
+                        f'FROM {self.CHANNEL_TABLE} ' \
+                        f'WHERE priority>{max_key} ' \
+                        f'ORDER BY priority ' \
+                        f'LIMIT 50) a'
+                result = list(self.select_from_table(table=table,
+                                                     columns=','.join(channel_cols),
+                                                     order_by='delay_comment, priority',
+                                                     asc_or_desc='asc',
+                                                     where=where))
+                if len(result) == 0:
+                    break
+                max_key = sorted(result, key=lambda x: x[complex_sort_key])[-1][complex_sort_key]
+                col_names = channel_cols
+                for row in result:
+                    yield self._row_to_dict(row, col_names)
 
     def add_channel(self, channel_data: Dict, active: bool = True) -> None:
         """ Insert the provided channel into the database"""
