@@ -219,9 +219,9 @@ class YoutubeManager(YoutubeApiV3):
                                            like_cnt=comment_dict['like_count'],
                                            reply_cnt=comment_dict['reply_count'],
                                            comment_time=comment_dict['comment_time'])
-                if len(exceptions) > cnt / 2 and cnt > 0:
-                    logger.error(f"{len(exceptions)} exceptions occurred! "
-                                 f"Will only raise the first one.")
+                logger.warn(f"{len(exceptions)}/{cnt} exceptions occurred!")
+                if len(exceptions) == cnt and cnt > 0:
+                    logger.error(f"Raising the first exception.")
                     raise exceptions[0]
             except Exception as e:
                 error_txt = f"Exception in the main loop of the Accumulator:\n{e}"
