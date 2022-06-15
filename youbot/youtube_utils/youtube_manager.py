@@ -97,6 +97,7 @@ class YoutubeManager(YoutubeApiV3):
         apis = self._apis
         self.load_template_comments()
         channel_ids, self_comments_flags, delay_comment = self._get_channel_data()
+        self.refresh_playlists(channel_ids)
         _, video_links_commented = self.get_comments(channel_ids=channel_ids,
                                                      n_recent=500)
         commented_comments, _ = self.get_comments(channel_ids=channel_ids,
@@ -116,7 +117,7 @@ class YoutubeManager(YoutubeApiV3):
                     or sleep_time > self.slow_sleep_time:
                 channel_ids, self_comments_flags, delay_comment = self._get_channel_data()
                 self.load_template_comments()
-                self._refresh_playlists(channel_ids)
+                self.refresh_playlists(channel_ids)
                 self._apis = apis  # Retry the failed apis
                 if self.dbox is not None:
                     self.upload_logs()
