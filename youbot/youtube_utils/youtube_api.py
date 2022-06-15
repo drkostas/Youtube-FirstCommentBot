@@ -168,6 +168,10 @@ class YoutubeApiV3(AbstractYoutubeApi):
         else:
             self.parallel_uploads.uploads = []
             self.parallel_uploads.done = 0
+            # smart way of keeping the ordering (mostly)
+            # assuming two splits
+            # TODO: implement for more than 2 - general case
+            channels = channels[::2] + channels[1::2]
             channels_lists = self.split_list(channels, max_channels)
             if len(self._apis) < len(channels_lists):
                 apis = list(islice(cycle(self._apis), len(channels_lists)))
