@@ -53,7 +53,10 @@ class YoutubeManager(YoutubeApiV3):
         self.crashed_file = os.path.join(base_path, '../../.crashed')
         if self.api_type == 'simulated':
             self.get_uploads = self.simulate_uploads
-        else:
+        elif self.api_type == 'parallel':
+            self.get_uploads = super().get_uploads_parallel
+            logger.info("Starting in Threading mode.")
+        else:  # normal
             self.get_uploads = super().get_uploads
         self.keys_path = config['keys_path']
         self.log_path = log_path

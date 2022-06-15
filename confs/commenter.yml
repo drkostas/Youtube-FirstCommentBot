@@ -12,8 +12,8 @@ youtube:
       credentials:
         - client_id: !ENV ${CLIENT_ID_COMM}  # YouTube client ID (see Readme)
           client_secret: !ENV ${CLIENT_SECRET_COMM}  # YouTube client secret (see Readme)
-#        - client_id: !ENV ${CLIENT_ID_COMM_2}  # YouTube client ID (see Readme)
-#          client_secret: !ENV ${CLIENT_SECRET_COMM_2}  # YouTube client secret (see Readme)
+        - client_id: !ENV ${CLIENT_ID_COMM}  # YouTube client ID (see Readme)
+          client_secret: !ENV ${CLIENT_SECRET_COMM}  # YouTube client secret (see Readme)
       api_version: v3
       read_only_scope: https://www.googleapis.com/auth/youtube.force-ssl
       username: !ENV ${USERNAME_COMM}  # Can be omitted (automatically derived). Useful when you are using a different api key for the accumulator
@@ -23,7 +23,7 @@ youtube:
       fast_sleep_time: !ENV ${FAST_SLEEP_TIME_COMM}  # Number of seconds to wait when on fast mode
       slow_sleep_time: !ENV ${SLOW_SLEEP_TIME_COMM}  # Number of seconds to wait when on slow mode
       max_posted_hours: !ENV ${MAX_POSTED_HOURS_COMM} # max num. of hours to check back for posted videos. Set it to 1 the first time your run the commenter
-    type: normal  # normal, simulated
+    type: !ENV ${YT_API_TYPE_COMM}  # normal, simulated, parallel
 comments:  # options: normal, simulated (simulated is just for testing)
   - config:
       local_folder_name: comments
