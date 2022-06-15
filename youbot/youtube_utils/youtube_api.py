@@ -159,7 +159,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
         max_channels = 50
         # Refresh playlists if needed
         if self.channel_playlists is None:
-            self._refresh_playlists(channels)
+            self.refresh_playlists(channels)
         if len(channels) <= max_channels:
             for upload in self._get_uploads(api=self._apis[0],
                                             channels=channels,
@@ -194,7 +194,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
         max_channels = 50
         # Refresh playlists if needed
         if self.channel_playlists is None:
-            self._refresh_playlists(channels)
+            self.refresh_playlists(channels)
         if len(channels) <= max_channels:
             for upload in self._get_uploads(api=self._apis[0],
                                             channels=channels,
@@ -246,11 +246,11 @@ class YoutubeApiV3(AbstractYoutubeApi):
         except Exception as e:
             logger.warn(e)
             logger.warn("Refreshing Playlists and retrying..")
-            self._refresh_playlists([channels])
+            self.refresh_playlists(channels)
             for upload in iter_uploads(channels, self.channel_playlists, api, max_posted_hours):
                 yield upload
 
-    def _refresh_playlists(self, channels_lists):
+    def refresh_playlists(self, channels_lists):
         playlist_ids_lst = []
         if len(channels_lists) > 50:
             channels_lists = self.split_list(channels_lists, 50)
@@ -268,8 +268,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
                 logger.error("Error refreshing some playlists..")
                 logger.error(e)
                 continue
-        channels_flat = [channel for channels in channels_lists for channel in channels]
-        self.channel_playlists = dict(zip(channels_flat, playlist_ids_lst))
+        self.channel_playlists = {playlist['id']: playlist for playlist in playlist_ids_lst}
 
     def get_video_comments(self, url: str, search_terms: str = None) -> List:
         """ Populates a list with comments (and their replies).
@@ -449,10 +448,6 @@ class YoutubeApiV3(AbstractYoutubeApi):
                     yield video
                 else:
                     yield None
-
-            playlist_items_request = api.playlistItems().list_next(
-                playlist_items_request, playlist_items_response
-            )
         except Exception as e:
             try:
                 if ch_id in self.channel_playlists:
