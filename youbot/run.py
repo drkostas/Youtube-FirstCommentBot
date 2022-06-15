@@ -41,9 +41,15 @@ def get_args() -> argparse.Namespace:
     optional_args.add_argument('--n-recent', default=50,
                                help="Number of recent comments to get for `list_comments`")
     optional_args.add_argument('--min_likes', default=-1,
-                               help="Number of minimum liked for `list_comments`")
+                               help="Number of minimum likes for `list_comments`")
     optional_args.add_argument('--min_replies', default=-1,
                                help="Number of minimum replies for `list_comments`")
+    optional_args.add_argument('--max_replies', default=99999,
+                               help="Number of maximum replies for `list_comments`")
+    optional_args.add_argument('--max_likes', default=99999,
+                               help="Number of maximum likes for `list_comments`")
+    optional_args.add_argument('--max_latency', default=99999,
+                               help="Number of maximum liked for `list_comments`")
     optional_args.add_argument('--priority',
                                help="Priority number for specified channel for `set_priority`")
     optional_args.add_argument('-d', '--debug', action='store_true',
@@ -90,6 +96,9 @@ def list_channels(youtube: YoutubeManager, args: argparse.Namespace) -> None:
 
 def list_comments(youtube: YoutubeManager, args: argparse.Namespace) -> None:
     youtube.list_comments(n_recent=args.n_recent, min_likes=args.min_likes,
+                          max_latency=int(args.max_latency),
+                          max_likes=args.max_likes,
+                          max_replies=args.max_replies,
                           min_replies=args.min_replies)
 
 

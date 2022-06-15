@@ -116,6 +116,7 @@ class YoutubeManager(YoutubeApiV3):
                     or sleep_time > self.slow_sleep_time:
                 channel_ids, self_comments_flags, delay_comment = self._get_channel_data()
                 self.load_template_comments()
+                self._refresh_playlists(channel_ids)
                 self._apis = apis  # Retry the failed apis
                 if self.dbox is not None:
                     self.upload_logs()
@@ -248,13 +249,15 @@ class YoutubeManager(YoutubeApiV3):
         self.pretty_print(headers, channels)
 
     def list_comments(self, n_recent: int = 50, min_likes: int = -1,
-                      min_replies: int = -1) -> None:
+                      min_replies: int = -1, max_likes: int = 99999, max_replies: int = 99999,
+                      max_latency: int = 99999) -> None:
         comment_cols = ['comment_time', 'upload_time', 'comment_time', 'like_count',
                         'reply_count', 'comment_link', 'comment']
         channel_cols = ['username']
         comments = []
         for row in self.db.get_comments(comment_cols=comment_cols, channel_cols=channel_cols,
-                                        n_recent=n_recent,
+                                        n_recent=n_recent, max_likes=max_likes,
+                                        max_replies=max_replies,
                                         min_likes=min_likes, min_replies=min_replies):
             username = row["username"].title()
             comment_time = arrow.get(row["comment_time"]).humanize()
@@ -263,9 +266,11 @@ class YoutubeManager(YoutubeApiV3):
                     arrow.get(row["upload_time"]).humanize(granularity='second').split(" ")[0])
                 comment_seconds_passed = int(
                     arrow.get(row["comment_time"]).humanize(granularity='second').split(" ")[0])
-                late = upload_seconds_passed - comment_seconds_passed
+                late = int(upload_seconds_passed - comment_seconds_passed)
             else:
                 late = -1
+            if late > max_latency:
+                continue
             comments.append([username, row["comment"], comment_time,
                              late, row["like_count"], row["reply_count"], row["comment_link"]])
 
