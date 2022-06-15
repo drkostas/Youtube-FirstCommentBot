@@ -456,8 +456,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
         except Exception as e:
             try:
                 if ch_id in self.channel_playlists:
-                    logger.error(e)
-                    logger.error(f"Skipping upload list {uploads_list_id} for channel {ch_id}..")
+                    logger.warn(f"Skipping upload list {uploads_list_id} for channel {ch_id}..")
                     del self.channel_playlists[ch_id]
             except Exception as e:
                 logger.error(e)
