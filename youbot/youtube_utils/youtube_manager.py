@@ -111,16 +111,15 @@ class YoutubeManager(YoutubeApiV3):
             loop_cnt += 1
             if (loop_cnt > self.reload_data_every and sleep_time > self.fast_sleep_time) \
                     or sleep_time > self.slow_sleep_time:
-                logger.info("Refreshing data..")
                 channel_ids, self_comments_flags, delay_comment = self._get_channel_data()
                 self.load_template_comments()
                 self._apis = apis  # Retry the failed apis
                 if self.dbox is not None:
                     self.upload_logs()
                 loop_cnt = 0
-                logger.info("Done")
             comments_added = []
             added_comment = False  # Flag to check if commented on raised error
+
             # Sort the videos by the priority of the channels (channel_ids are sorted by priority)
             # and comment in the videos not already commented
             try:

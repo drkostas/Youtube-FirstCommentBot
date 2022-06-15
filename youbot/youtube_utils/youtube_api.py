@@ -181,9 +181,12 @@ class YoutubeApiV3(AbstractYoutubeApi):
             max_posted_hours:
         """
 
-        def iter_uploads(channel_playlists, _api, _max_posted_hours):
+        def iter_uploads(channels, channel_playlists, _api, _max_posted_hours):
             # TODO: maybe pop the playlists yielded for error handling?
-            for ch_id, playlist in list(channel_playlists.items()):
+            for ch_id in channels:
+                if ch_id not in channel_playlists:
+                    continue
+                playlist = channel_playlists[ch_id]
                 playlist_id = playlist["contentDetails"]["relatedPlaylists"]["uploads"]
                 for _upload in self._get_uploads_playlist(_api, ch_id, playlist_id, _max_posted_hours):
                     if _upload is None:
@@ -197,16 +200,15 @@ class YoutubeApiV3(AbstractYoutubeApi):
 
         # Separate the channels list in 50-sized channel lists
         # channels_lists = self.split_list(channels, 50)  # Redundant
-        channels_lists = [channels]
         # For each playlist ID, get 50 videos
         try:
-            for upload in iter_uploads(self.channel_playlists, api, max_posted_hours):
+            for upload in iter_uploads(channels, self.channel_playlists, api, max_posted_hours):
                 yield upload
         except Exception as e:
             logger.warn(e)
             logger.warn("Refreshing Playlists and retrying..")
-            self._refresh_playlists(channels_lists)
-            for upload in iter_uploads(self.channel_playlists, api, max_posted_hours):
+            self._refresh_playlists([channels])
+            for upload in iter_uploads(channels, self.channel_playlists, api, max_posted_hours):
                 yield upload
 
     def _refresh_playlists(self, channels_lists):
@@ -391,7 +393,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
             playlistId=uploads_list_id,
             part="snippet",
             fields='items(id,snippet(title,publishedAt,resourceId(videoId)))',
-            maxResults=10
+            maxResults=1
         )
 
         try:
