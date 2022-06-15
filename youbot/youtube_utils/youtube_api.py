@@ -11,6 +11,8 @@ from oauth2client.client import OAuth2WebServerFlow
 import googleapiclient
 from googleapiclient.discovery import build
 import httplib2
+from threading import Thread
+import time
 from itertools import islice, cycle
 from youbot import ColorLogger
 
@@ -56,6 +58,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
     def __init__(self, config: Dict, tag: str):
         global logger
         logger = ColorLogger(logger_name=f'[{tag}] YoutubeApi', color='green')
+        self.parallel_uploads = ParallelUploads()
         super().__init__(config, tag)
 
     @staticmethod
@@ -132,7 +135,7 @@ class YoutubeApiV3(AbstractYoutubeApi):
             if channel is not None:
                 channel['username'] = username
         else:
-            logger.warning(f"Got empty response for channel username: {username}")
+            logger.warn(f"Got empty response for channel username: {username}")
             channel = {}
         return channel
 
@@ -150,6 +153,38 @@ class YoutubeApiV3(AbstractYoutubeApi):
         ).execute()
 
         return self._yt_to_channel_dict(channels_response)
+
+    def get_uploads_parallel(self, channels: List, max_posted_hours: int = 2) -> Dict:
+
+        max_channels = 50
+        # Refresh playlists if needed
+        if self.channel_playlists is None:
+            self._refresh_playlists(channels)
+        if len(channels) <= max_channels:
+            for upload in self._get_uploads(api=self._apis[0],
+                                            channels=channels,
+                                            max_posted_hours=max_posted_hours):
+                yield upload
+        else:
+            self.parallel_uploads.uploads = []
+            self.parallel_uploads.done = 0
+            channels_lists = self.split_list(channels, max_channels)
+            if len(self._apis) < len(channels_lists):
+                apis = list(islice(cycle(self._apis), len(channels_lists)))
+            else:
+                apis = self._apis
+            threads = []
+            for channels, api in zip(channels_lists, apis):
+                t = Thread(target=self.parallel_uploads.get, args=(channels, api, max_posted_hours,
+                                                                   self._get_uploads))
+                t.start()
+                threads.append(t)
+            start_t = time.time()
+            while self.parallel_uploads.done < len(channels_lists) and time.time() - start_t < 30:
+                if len(self.parallel_uploads.uploads) > 0:
+                    yield self.parallel_uploads.uploads.pop()
+            for t in threads:
+                t.join()
 
     def get_uploads(self, channels: List, max_posted_hours: int = 2) -> Dict:
         max_channels = 50
@@ -485,3 +520,20 @@ class YoutubeApiV3(AbstractYoutubeApi):
                 if value:
                     good_kwargs[key] = value
         return good_kwargs
+
+
+class ParallelUploads:
+    def __init__(self):
+        self.uploads = []
+        self.done = 0
+
+    def get(self, channels, api, max_posted_hours, _get_uploads):
+        try:
+            for upload in _get_uploads(api=api,
+                                       channels=channels,
+                                       max_posted_hours=max_posted_hours):
+                self.uploads.append(upload)
+        except Exception as e:
+            logger.error(e)
+            self.done += 1
+        self.done += 1
