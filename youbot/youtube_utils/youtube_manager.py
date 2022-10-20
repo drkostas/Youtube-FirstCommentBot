@@ -170,7 +170,7 @@ class YoutubeManager(YoutubeApiV3):
                 if errors > 5:
                     self._apis = apis
                     sleep_time = self.seconds_until_next_hour()
-                    logger.error(f"Will sleep until next hour ({sleep_time} seconds)")
+                    logger.info(f"More than 5 errors! Will sleep until {datetime.now() + timedelta(seconds=sleep_time)}")
                     self.upload_logs()
                     loop_cnt = 0
             else:
@@ -180,8 +180,9 @@ class YoutubeManager(YoutubeApiV3):
                     sleep_time = self.fast_sleep_time  # check every second when close to new hour
                 else:
                     sleep_time = self.default_sleep_time
-                if sleep_time > 3600:
+                if self.exceeds_hot_minute(sleep_time):
                     sleep_time = self.seconds_until_next_hour()
+                    logger.info(f"Will sleep until {datetime.now() + timedelta(seconds=sleep_time)}")
             # Save the new comments added in the DB
             try:
                 for (video, video_url, comment_text, comment_time) in comments_added:
@@ -562,8 +563,19 @@ class YoutubeManager(YoutubeApiV3):
         else:
             minute = hot_minute_end
             delta = timedelta(hours=0)
+        if minute>59:
+            minute = 0
+            delta = timedelta(hours=1) 
         target_time = (now + delta).replace(microsecond=0, second=0, minute=minute)
         return (target_time - now).seconds
+
+    @staticmethod
+    def exceeds_hot_minute(seconds) -> bool:
+        hot_minute_end = 58
+        now = datetime.now()
+        now_minute = now.minute + seconds/60
+        flag = now_minute >= hot_minute_end
+        return flag
 
     @staticmethod
     def touch(fname, mode=0o666, dir_fd=None, **kwargs):
