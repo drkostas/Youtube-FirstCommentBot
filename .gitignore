@@ -147,3 +147,6 @@ dmypy.json
 # Custom
 /keys/*.json
 .crashed
+.DS_Store
+comments/*.txt
+tmp*
