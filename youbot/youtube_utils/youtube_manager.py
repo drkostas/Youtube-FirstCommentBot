@@ -180,6 +180,8 @@ class YoutubeManager(YoutubeApiV3):
                     sleep_time = self.fast_sleep_time  # check every second when close to new hour
                 else:
                     sleep_time = self.default_sleep_time
+                if sleep_time > 3600:
+                    sleep_time = self.seconds_until_next_hour()
             # Save the new comments added in the DB
             try:
                 for (video, video_url, comment_text, comment_time) in comments_added:
@@ -550,21 +552,18 @@ class YoutubeManager(YoutubeApiV3):
 
     @staticmethod
     def seconds_until_next_hour() -> int:
-        hot_minute_start = 5
-        hot_minute_end = 55
+        hot_minute_start = 1
+        hot_minute_end = 58
         now = datetime.now()
         now_minute = now.minute
-        if hot_minute_start <= now_minute <= hot_minute_end:
-            minute = now_minute
-            delta = timedelta(hours=1)
-        elif now_minute <= hot_minute_start:
-            minute = hot_minute_end
+        if now_minute <= hot_minute_start or now_minute >= hot_minute_end:
+            minute = now_minute+1
             delta = timedelta(hours=0)
         else:
             minute = hot_minute_end
-            delta = timedelta(hours=1)
-        next_hour = (now + delta).replace(microsecond=0, second=0, minute=minute)
-        return (next_hour - now).seconds
+            delta = timedelta(hours=0)
+        target_time = (now + delta).replace(microsecond=0, second=0, minute=minute)
+        return (target_time - now).seconds
 
     @staticmethod
     def touch(fname, mode=0o666, dir_fd=None, **kwargs):
