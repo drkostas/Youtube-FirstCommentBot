@@ -12,8 +12,8 @@ See the [issues](https://github.com/drkostas/youbot/issues) too.
 - [ ] Fix split list error when only having two channels
 - [ ] Readme: Google API needs to be in production mode
 - [ ] Error create key json file the first time
-		Not a path problem, you should info about the folders to create in dropbox
-		Or automate the creation of the folders (better)
+  Not a path problem, you should info about the folders to create in dropbox
+  Or automate the creation of the folders (better)
 - [ ] Make error catching more specific
 - [ ] Send me email on fatal error (on later version)
 - [ ] Email me if there are replies mentioning the word "bot"

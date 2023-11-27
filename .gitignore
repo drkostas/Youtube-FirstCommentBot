@@ -150,6 +150,5 @@ dmypy.json
 *.DS_Store
 *.code-workspace
 *.sql
-youbot/youtube_utils/test_comment.py
 .history
 comments/*.txt

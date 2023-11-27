@@ -204,6 +204,7 @@ python youbot/run.py -c confs/accumulator.yml -l logs/accumulator.log -m accumul
 ```
 
 ## Using Dropbox <a name = "dropbox"></a>
+
 <https://stackoverflow.com/questions/70641660/how-do-you-get-and-use-a-refresh-token-for-the-dropbox-api-python-3-x>
 
 There is the option to also incorporate dropbox in the whole pipeline. Assuming you already created an
