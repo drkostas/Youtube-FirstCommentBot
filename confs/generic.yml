@@ -13,16 +13,16 @@ youtube:
       client_secret: !ENV ${CLIENT_SECRET_GEN}
       api_version: v3
       read_only_scope: https://www.googleapis.com/auth/youtube.force-ssl
-      username: !ENV ${USERNAME_GEN}  # Can be omitted (automatically derived). Useful when you are using a different api key for the accumulator
-      load_keys_from_cloud: True  # if true, cloudstore config is required. Loads the YT keys from the specified dropbox folder
-      keys_path: keys  # The local path of the YT keys
-    type: normal  # options: normal, simulated (simulated is just for testing)
-cloudstore:  # Optional
+      username: !ENV ${USERNAME_GEN} # Can be omitted (automatically derived). Useful when you are using a different api key for the accumulator
+      load_keys_from_cloud: True # if true, cloudstore config is required. Loads the YT keys from the specified dropbox folder
+      keys_path: keys # The local path of the YT keys
+    type: normal # options: normal, simulated (simulated is just for testing)
+cloudstore: # Optional
   - config:
-      api_key: !ENV ${DROPBOX_API_KEY}  # Dropbox api key, see Readme
-      refresh_token: !ENV ${DROPBOX_REFRESH_TOKEN}  # Dropbox api key, see Readme
-      app_key: !ENV ${DROPBOX_APP_KEY}  # Dropbox app key, see Readme
-      app_secret: !ENV ${DROPBOX_APP_SECRET}  # Dropbox app secret, see Readme
-      logs_folder_path: /yt-commenter/logs  # The Dropbox path where the log files are going to be being backed up
-      keys_folder_path: /yt-commenter/keys  # The Dropbox path where the keys are going to be copied locally from
+      api_key: !ENV ${DROPBOX_API_KEY} # Dropbox api key, see Readme
+      refresh_token: !ENV ${DROPBOX_REFRESH_TOKEN} # Dropbox api key, see Readme
+      app_key: !ENV ${DROPBOX_APP_KEY} # Dropbox app key, see Readme
+      app_secret: !ENV ${DROPBOX_APP_SECRET} # Dropbox app secret, see Readme
+      logs_folder_path: /yt-commenter/logs # The Dropbox path where the log files are going to be being backed up
+      keys_folder_path: /yt-commenter/keys # The Dropbox path where the keys are going to be copied locally from
     type: dropbox
