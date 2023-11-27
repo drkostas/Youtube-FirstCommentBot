@@ -13,15 +13,19 @@ youtube:
       client_secret: !ENV ${CLIENT_SECRET_ACC}
       api_version: v3
       read_only_scope: https://www.googleapis.com/auth/youtube.force-ssl
-      username: !ENV ${USERNAME_ACC}  # Can be omitted (automatically derived)
-      comment_search_term: !ENV ${SEARCH_TERM_ACC}  # Can be omitted (username will be used instead - sometimes doesn't work)
-      sleep_time: !ENV ${SLEEP_TIME_ACC}
-      load_keys_from_cloud: true  # cloudstore config is required
-      keys_path: keys
+      username: !ENV ${USERNAME_ACC}  # Can be omitted (automatically derived). Useful when you are using a different api key for the accumulator
+      comment_search_term: !ENV ${COMMENT_SEARCH_TERM_ACC}  # Can be omitted (automatically derived). Useful when you are using a different api key for the accumulator
+      sleep_time: !ENV ${SLEEP_TIME_ACC}  # Number of seconds to wait until checking for new videos again. Increase this if you are getting api limit errors
+      num_comments_to_check: !ENV ${NUM_COMMENTS_ACC}  # Latest N number of comments to check and update their metadata
+      load_keys_from_cloud: True  # cloudstore config is required
+      keys_path: keys  # if true, cloudstore config is required. Loads the YT keys from the specified dropbox folder
     type: normal  # normal, simulated
 cloudstore:  # Optional
   - config:
-      api_key: !ENV ${DROPBOX_API_KEY}
-      logs_folder_path: /yt-commenter/logs
-      keys_folder_path: /yt-commenter/keys
+      api_key: !ENV ${DROPBOX_API_KEY}  # Dropbox api key, see Readme
+      refresh_token: !ENV ${DROPBOX_REFRESH_TOKEN}  # Dropbox api key, see Readme
+      app_key: !ENV ${DROPBOX_APP_KEY}  # Dropbox app key, see Readme
+      app_secret: !ENV ${DROPBOX_APP_SECRET}  # Dropbox app secret, see Readme
+      logs_folder_path: /yt-commenter/logs  # The Dropbox path where the log files are going to be being backed up
+      keys_folder_path: /yt-commenter/keys  # The Dropbox path where the keys are going to be copied locally from
     type: dropbox

@@ -7,30 +7,38 @@ datastore:
       db_name: !ENV ${MYSQL_DB_NAME}
       port: 3306
     type: mysql
-youtube:
-  - config:
-      client_id: !ENV ${CLIENT_ID_COMM}
-      client_secret: !ENV ${CLIENT_SECRET_COMM}
-      api_version: v3
-      read_only_scope: https://www.googleapis.com/auth/youtube.force-ssl
-      username: !ENV ${USERNAME_COMM}  # Can be omitted (automatically derived)
-      load_keys_from_cloud: true  # cloudstore config is required
-      keys_path: keys
-      sleep_time: !ENV ${SLEEP_TIME_COMM}
-      max_posted_hours: !ENV ${MAX_POSTED_HOURS_COMM} # max num. of hours to check back for posted videos
-    type: normal  # normal, simulated
-comments:
+comments:  # options: normal, simulated (simulated is just for testing)
   - config:
       local_folder_name: comments
       dropbox_folder_name: /yt-commenter/comments
     type: !ENV ${COMMENTS_TYPE}  # local, dropbox (should set `cloudstore` config), or mysql (not implemented)
 cloudstore:  # Optional
   - config:
-      api_key: !ENV ${DROPBOX_API_KEY}
-      logs_folder_path: /yt-commenter/logs
-      keys_folder_path: /yt-commenter/keys
-      upload_logs_every: !ENV ${UPLOAD_LOGS_EVERY}  # number of loops in commenter()
+      api_key: !ENV ${DROPBOX_API_KEY}  # Dropbox api key, see Readme
+      refresh_token: !ENV ${DROPBOX_REFRESH_TOKEN}  # Dropbox api key, see Readme
+      app_key: !ENV ${DROPBOX_APP_KEY}  # Dropbox app key, see Readme
+      app_secret: !ENV ${DROPBOX_APP_SECRET}  # Dropbox app secret, see Readme
+      logs_folder_path: /yt-commenter/logs  # The Dropbox path where the log files are going to be being backed up
+      keys_folder_path: /yt-commenter/keys  # The Dropbox path where the keys are going to be copied locally from
+      reload_data_every: !ENV ${RELOAD_DATA_EVERY}  # Every how many # of loops in the commenter() to reload data and backup logs
     type: dropbox
+youtube:
+  - config:
+      api_version: v3
+      read_only_scope: https://www.googleapis.com/auth/youtube.force-ssl
+      username: !ENV ${USERNAME_COMM}  # Can be omitted (automatically derived). Useful when you are using a different api key for the accumulator
+      load_keys_from_cloud: True  # if true, cloudstore config is required.
+      keys_path: keys  # Local keys folder
+      sleep_time: !ENV ${SLEEP_TIME_COMM}  # Number of seconds to wait until checking for new videos again. Increase this if you are getting api limit errors
+      fast_sleep_time: !ENV ${FAST_SLEEP_TIME_COMM}  # Number of seconds to wait when on fast mode
+      slow_sleep_time: !ENV ${SLOW_SLEEP_TIME_COMM}  # Number of seconds to wait when on slow mode
+      max_posted_hours: !ENV ${MAX_POSTED_HOURS_COMM} # max num. of hours to check back for posted videos. Set it to 1 the first time your run the commenter
+      credentials:
+        - client_id: !ENV ${CLIENT_ID_COMM}  # YouTube client ID (see Readme)
+          client_secret: !ENV ${CLIENT_SECRET_COMM}  # YouTube client secret (see Readme)
+        - client_id: !ENV ${CLIENT_ID_COMM}  # YouTube client ID (see Readme)
+          client_secret: !ENV ${CLIENT_SECRET_COMM}  # YouTube client secret (see Readme)
+    type: !ENV ${YT_API_TYPE_COMM}  # normal, simulated, parallel, search
 #emailer:  # Not implemented yet
 #  - config:
 #      email_address: !ENV ${EMAIL_ADDRESS}
