@@ -8,12 +8,12 @@
 
 + [About](#about)
 + [Getting Started](#getting_started)
-    + [Prerequisites](#prerequisites)
+  + [Prerequisites](#prerequisites)
 + [Build and prepare the project](#build_prepare)
-    + [Install the requirements](#install)
-    + [Create the config files](#configs)
-    + [Specify the pool of comments](#comments_pool)
-    + [Start following channels](#add_channels)
+  + [Install the requirements](#install)
+  + [Create the config files](#configs)
+  + [Specify the pool of comments](#comments_pool)
+  + [Start following channels](#add_channels)
 + [Run the Bot](#commenter)
 + [Gathering statistics about the comments](#accumulator)
 + [Using Dropbox](#dropbox)
@@ -32,14 +32,14 @@ A bot that leaves the first comment on every new video of specified channels.
 
 Current modules:
 
-- Commenter: Looks for new videos indefinitely and leaves a comment as soon as something is posted
-- Accumulator: Goes through all the comments posted and populates the `comments` table in the DB with
++ Commenter: Looks for new videos indefinitely and leaves a comment as soon as something is posted
++ Accumulator: Goes through all the comments posted and populates the `comments` table in the DB with
   metadata such as the likes and replies count
-- List Channels: It lists the Channels that are currently followed by the bot
-- List Comments: It lists all the Comments posted by the bot
-- Add Channel: It adds a new channel to the following list
-- Set Priority: It set the comment priority of a specified channel
-- Refresh Photo: It gathers and populates the `channels` table in the DB with URLs to the Channels'
++ List Channels: It lists the Channels that are currently followed by the bot
++ List Comments: It lists all the Comments posted by the bot
++ Add Channel: It adds a new channel to the following list
++ Set Priority: It set the comment priority of a specified channel
++ Refresh Photo: It gathers and populates the `channels` table in the DB with URLs to the Channels'
   profile photos
 
 ## Getting Started <a name = "getting_started"></a>
@@ -67,21 +67,25 @@ API key which is very useful when you use Heroku to deploy the bot.
 
 References:
 
-- YouTube: Use the Google API Console to create OAuth 2.0 credentials:
-    + Visit the [developer console](https://console.cloud.google.com/apis/dashboard)
-    + Create a new project
-    + Open the [API Manager](https://console.developers.google.com/apis/)
-    + Enable YouTube Data API v3
-    + Go to [Credentials](https://console.cloud.google.com/apis/credentials)
-    + Configure the OAuth consent screen and create OAuth client ID credentials
-    + Use Application Type Other and provide a client name (e.g. YoutubeBot)
-    + Confirm and download the generated credentials as JSON file
-    + Store the file in the `keys` folder 3 times as `keys/generic.json`, `keys/commenter.json`
-      , `keys/accumulator.json`
-- MySQL: If you don't ha DB already, you can create one for free with Amazon RDS:
++ YouTube: Use the Google API Console to create OAuth 2.0 credentials:
+  + Visit the [developer console](https://console.cloud.google.com/apis/dashboard)
+  + Create a new project
+  + Open the [API Manager](https://console.developers.google.com/apis/)
+  + Enable YouTube Data API v3
+  + Go to [Credentials](https://console.cloud.google.com/apis/credentials)
+    + Type: Web Application
+    + Authorized Redirect URIs: <http://localhost:8080>
+    + Copy Client ID and secret to the respective vars in your config file
+  + The first time you use the credentials the app will redirect you to a webpage
+    + Login with the Google account you used
+    + Click Advanced -> "Go to <name> (unsafe)"
+    + Click Continue
+  + Your Credentials are set up!
+  + (*Warning*: The default quota limit per day is around 10,000 which is only enough for having 2 channels. You should request a quota increase if you want more.)
++ MySQL: If you don't ha DB already, you can create one for free with Amazon RDS:
   [Reference 1](https://aws.amazon.com/rds/free/),
   [Reference 2](https://bigdataenthusiast.wordpress.com/2016/03/05/aws-rds-instance-setup-oracle-db-on-cloud-free-tier/)
-- Dropbox: How to set up an API key for your Dropbox account:
++ Dropbox: How to set up an API key for your Dropbox account:
   [Reference 1](http://99rabbits.com/get-dropbox-access-token/),
   [Reference 2](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account)
 
@@ -101,23 +105,23 @@ Deactivate and active Conda environment, install the requirements and load the n
 environment:
 
 ```ShellSession
-$ conda deactivate
-$ make install
-$ conda activate youbot
+conda deactivate
+make install
+conda activate youbot
 ```
 
 ### Create the config files <a name = "configs"></a>
 
 The project uses YML config files along with command-line arguments. There are three configs I am using:
 
-- [generic.yml](confs/generic.yml): Used for running the following commands:
-    - list_channels
-    - list_comments
-    - add_channel
-    - refresh_photos
-    - set_priority
-- [commenter.yml](confs/commenter.yml): Used to run the `commenter` command
-- [accumulator.yml](confs/accumulator.yml): Used to run the `accumulator` command
++ [generic.yml](confs/generic.yml): Used for running the following commands:
+  + list_channels
+  + list_comments
+  + add_channel
+  + refresh_photos
+  + set_priority
++ [commenter.yml](confs/commenter.yml): Used to run the `commenter` command
++ [accumulator.yml](confs/accumulator.yml): Used to run the `accumulator` command
 
 I am not going to go into depth for each available setting because you can use the three YML files as
 templates. The only thing that should be mentioned is that I am using environmental variables to set
@@ -143,19 +147,19 @@ the Conda environment, use the following command to add channels:
 Using the channel ID
 
 ```ShellSession
-$ python youbot/run.py -c confs/generic.yml -l logs/generic.log -m add_channel -i <channel id>
+python youbot/run.py -c confs/generic.yml -l logs/generic.log -m add_channel -i <channel id>
 ```
 
 Using the channel username (Fails most of the time)
 
 ```ShellSession
-$ python youbot/run.py -c confs/generic.yml -l logs/generic.log -m add_channel -u <channel username>
+python youbot/run.py -c confs/generic.yml -l logs/generic.log -m add_channel -u <channel username>
 ```
 
 To view the followed channels run:
 
 ```ShellSession
-$ python youbot/run.py -c confs/generic.yml -l logs/generic.log -m list_channels
+python youbot/run.py -c confs/generic.yml -l logs/generic.log -m list_channels
 ```
 
 There is also the option to set the priorities of each channel. If 2 or more channels post videos at
@@ -163,13 +167,13 @@ the same time, the bot will leave comments first to the ones with the highest pr
 run the following:
 
 ```ShellSession
-$ python youbot/run.py -c confs/generic.yml -l logs/generic.log -m set_priority --priority <priority num> -i <channel id>
+python youbot/run.py -c confs/generic.yml -l logs/generic.log -m set_priority --priority <priority num> -i <channel id>
 ```
 
 After you're done, you can optionally populate the table with each channel's profile picture:
 
 ```ShellSession
-$ python youbot/run.py -c confs/generic.yml -l logs/generic.log -m refresh_photos
+python youbot/run.py -c confs/generic.yml -l logs/generic.log -m refresh_photos
 ```
 
 ## Run the Bot <a name = "commenter"></a>
@@ -200,20 +204,21 @@ python youbot/run.py -c confs/accumulator.yml -l logs/accumulator.log -m accumul
 ```
 
 ## Using Dropbox <a name = "dropbox"></a>
+<https://stackoverflow.com/questions/70641660/how-do-you-get-and-use-a-refresh-token-for-the-dropbox-api-python-3-x>
 
 There is the option to also incorporate dropbox in the whole pipeline. Assuming you already created an
 API key and added a cloudstore section in the config, you can use the following options:
 
-- `load_keys_from_cloud: true` (under youtube config): If set to true, the bot will automatically copy
++ `load_keys_from_cloud: true` (under youtube config): If set to true, the bot will automatically copy
   the JSON keys from the defined `keys_folder_path` setting (in cloudstore config) to the defined
   `keys` setting (in youtube config). This is very useful if you deploy the bot to Heroku which is
   stateless and any newly created file can be deleted anytime. So you may have to manually recreate the
   keys.
-- `upload_logs_every: 15` (under cloudstore config): If you configured the cloudstore config for the
++ `upload_logs_every: 15` (under cloudstore config): If you configured the cloudstore config for the
   commenter, then the bot will automatically copy the log file to the cloudstore `logs_folder_path`
   every 15 `While: True` loops in the commenter function. Again, very useful for keeping the logs while
   running on Heroku.
-- `comments: type: dropbox`: If you set the type of the `comments` setting as `dropbox` then the
++ `comments: type: dropbox`: If you set the type of the `comments` setting as `dropbox` then the
   commenter will download the comment txt files from `dropbox_folder_name` into `local_folder_name`
   before every `While: True` loop in the commenter. Useful for modifying the comments when running on
   Heroku.
@@ -233,7 +238,7 @@ and that you set the appropriate environmental variables
 For the continuous integration, the <b>CircleCI</b> service is being used. For more information, you can
 check the [setup guide](https://circleci.com/docs/2.0/language-python/).
 
-Again, you should set the appropriate environmental variables 
+Again, you should set the appropriate environmental variables
 ([reference](https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-context))
 and for any modifications, edit the [circleci config](/.circleci/config.yml).
 
@@ -244,4 +249,3 @@ Read the [TODO](TODO.md) to see the current task list.
 ## License <a name = "license"></a>
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
