@@ -28,6 +28,9 @@ class YoutubeMySqlDatastore(HighMySQL):
             last_commented varchar(100)              not null,
             priority       int auto_increment,
             channel_photo  varchar(100) default '-1' null,
+            active             tinyint(1)   default 1    not null,
+            self_comments_only tinyint(1)   default 0    not null,
+            delay_comment      int          default 10    not null,
             constraint id_pk PRIMARY KEY (channel_id),
             constraint channel_id unique (channel_id),
             constraint priority unique (priority),
@@ -43,14 +46,21 @@ class YoutubeMySqlDatastore(HighMySQL):
             comment_id   varchar(100) default '-1' null,
             video_id     varchar(100) default '-1' null,
             comment_link varchar(100) default '-1' null,
+            video_title varchar(255) default '-1' null,
             constraint video_link_pk PRIMARY KEY (video_link),
-            constraint video_link     unique (video_link),
-            constraint channel_id foreign key (channel_id) references channels (channel_id) on update cascade on delete cascade"""
+            constraint video_link     unique (video_link)"""
 
         self.create_table(table=self.CHANNEL_TABLE, schema=channels_schema)
         self.create_table(table=self.COMMENTS_TABLE, schema=comments_schema)
 
-    def get_channels(self) -> List[Dict]:
+    def get_channels(
+        self,
+        channel_cols: List,
+        comment_cols: List = None,
+        where: str = "active IS TRUE",
+        join_type: str = "INNER",
+        complex_sort_key: int = None,
+    ) -> List[Dict]:
         """Retrieve all channels from the database."""
         if comment_cols is not None:
             result = self.select_join(
@@ -105,11 +115,13 @@ class YoutubeMySqlDatastore(HighMySQL):
                 for row in result:
                     yield self._row_to_dict(row, col_names)
 
-    def add_channel(self, channel_data: Dict) -> None:
+    def add_channel(self, channel_data: Dict, active: bool = True) -> None:
         """Insert the provided channel into the database"""
 
         try:
             # TODO: Implement if_not_exists=True in HighMySQL
+            if not active:
+                channel_data["active"] = "FALSE"
             self.insert_into_table(table=self.CHANNEL_TABLE, data=channel_data)
         except Exception as e:
             # TODO: except HighMySQL.mysql.connector.errors.IntegrityError as e:
@@ -235,8 +247,12 @@ class YoutubeMySqlDatastore(HighMySQL):
             ch_id (str): The channel ID
         """
 
-        where_statement = f"id='{ch_id}'"
-        self.delete_from_table(table=self.CHANNEL_TABLE, where=where_statement)
+        where_statement = f"channel_id='{ch_id}'"
+        self.update_table(
+            table=self.CHANNEL_TABLE,
+            set_data={"active": "false"},
+            where=where_statement,
+        )
 
     def remove_channel_by_username(self, ch_username: str) -> None:
         """Delete a channel from the database by its Username
@@ -245,7 +261,11 @@ class YoutubeMySqlDatastore(HighMySQL):
         """
 
         where_statement = f"username='{ch_username}'"
-        self.delete_from_table(table=self.CHANNEL_TABLE, where=where_statement)
+        self.update_table(
+            table=self.CHANNEL_TABLE,
+            set_data={"active": "false"},
+            where=where_statement,
+        )
 
     def update_channel_photo(self, channel_id: str, photo_url: str) -> None:
         """
@@ -278,9 +298,11 @@ class YoutubeMySqlDatastore(HighMySQL):
             video_link:
             comment_text:
             upload_time:
+            video_title:
         """
 
         datetime_now = datetime.utcnow().isoformat()
+        # TODO: Fix string sanitizing in highsql
         comments_data = {
             "channel_id": ch_id,
             "video_link": video_link,
@@ -288,6 +310,7 @@ class YoutubeMySqlDatastore(HighMySQL):
             "comment_id": comment_id,
             "comment_time": datetime_now,
             "upload_time": upload_time,
+            "video_title": video_title.replace("'", "''"),
         }
         update_data = {"last_commented": datetime_now}
         where_statement = f"channel_id='{ch_id}'"
@@ -325,8 +348,11 @@ class YoutubeMySqlDatastore(HighMySQL):
         """
         Get the latest n_recent comments from the comments table.
         Args:
+            comment_cols:
+            channel_cols:
             n_recent:
             min_likes:
+            max_likes:
             min_replies:
             max_replies:
             channel_id:
@@ -400,12 +426,13 @@ class YoutubeMySqlDatastore(HighMySQL):
             comment_id:
             like_cnt:
             reply_cnt:
+            upload_time:
+            video_title:
+            comment_time:
         """
 
         # Get video id
         video_id = video_link.split("v=")[1].split("&")[0]
-        # Create Comment Link
-        comment_link = f"https://youtube.com/watch?v={video_id}&lc={comment_id}"
         # Construct the update key-values
         set_data = {}
         if video_id is not None:
@@ -509,35 +536,11 @@ class YoutubeMySqlDatastore(HighMySQL):
         return results
 
     @staticmethod
-    def _table_row_to_channel_dict(row: Tuple) -> Dict:
-        """Transform a table row into a channel representation
+    def _row_to_dict(row: Tuple, col_names: List) -> Dict:
+        """Transform a table row into a dictionary
         Args:
-            row (list): The database row
+            row (tuple): The database row
+            col_names (list): The names of the columns retrieved
         """
 
-        channel = dict()
-        channel["channel_id"] = row[0]
-        channel["username"] = row[1]
-        channel["added_on"] = row[2]
-        channel["last_commented"] = row[3]
-        channel["priority"] = row[4]
-        channel["channel_photo"] = row[5]
-        return channel
-
-    @staticmethod
-    def _table_row_to_comment_dict(row: Tuple) -> Dict:
-        """Transform a table row into a channel representation
-        Args:
-            row (list): The database row
-        """
-
-        channel = dict()
-        channel["video_link"] = row[0]
-        channel["comment"] = row[1]
-        channel["comment_time"] = row[2]
-        channel["like_count"] = row[3]
-        channel["reply_count"] = row[4]
-        channel["comment_link"] = row[5]
-        channel["username"] = row[6]
-        channel["channel_photo"] = row[7]
-        return channel
+        return dict(zip(col_names, row))

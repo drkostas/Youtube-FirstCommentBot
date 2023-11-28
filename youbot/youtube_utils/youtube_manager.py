@@ -23,11 +23,13 @@ class YoutubeManager(YoutubeApiV3):
         "dbox",
         "comments_conf",
         "default_sleep_time",
+        "fast_sleep_time",
+        "slow_sleep_time",
         "max_posted_hours",
         "api_type",
         "template_comments",
         "log_path",
-        "upload_logs_every",
+        "reload_data_every",
         "keys_path",
         "dbox_logs_folder_path",
         "dbox_keys_folder_path",
@@ -82,9 +84,9 @@ class YoutubeManager(YoutubeApiV3):
             )
             self.dbox_logs_folder_path = cloud_conf["logs_folder_path"]
             self.dbox_keys_folder_path = cloud_conf["keys_folder_path"]
-            self.upload_logs_every = (
-                int(cloud_conf["upload_logs_every"])
-                if "upload_logs_every" in cloud_conf
+            self.reload_data_every = (
+                int(cloud_conf["reload_data_every"])
+                if "reload_data_every" in cloud_conf
                 else 100
             )
         elif self.comments_conf is not None:
@@ -94,6 +96,8 @@ class YoutubeManager(YoutubeApiV3):
                     "but `cloudstore` config is not set!"
                 )
         self.default_sleep_time = sleep_time
+        self.fast_sleep_time = fast_sleep_time
+        self.slow_sleep_time = slow_sleep_time
         self.max_posted_hours = max_posted_hours
         self.api_type = api_type
         self.template_comments = {}
@@ -115,6 +119,9 @@ class YoutubeManager(YoutubeApiV3):
             self.comment_search_term = config["search_term"]
         if "comment_search_term" in config:
             self.comment_search_term = config["comment_search_term"]
+        self.num_comments_to_check = 50
+        if "num_comments_to_check" in config:
+            self.num_comments_to_check = config["num_comments_to_check"]
         if "load_keys_from_cloud" in config:
             if config["load_keys_from_cloud"] is True:
                 self.load_keys_from_cloud()
@@ -144,8 +151,14 @@ class YoutubeManager(YoutubeApiV3):
         return channel_ids, self_comments_flags, delay_comment
 
     def commenter(self):
+        if os.path.exists(self.crashed_file):
+            raise YoutubeManagerError(
+                "Crashed flag has been raised. Fix the error and delete "
+                "the .crashed file manually before restarting the code."
+            )
         # Initialize
-        sleep_time = 0
+        logger.info("Initializing..")
+        sleep_time = self.default_sleep_time
         loop_cnt = 0
         errors = 0
         self.load_template_comments()
@@ -187,18 +200,10 @@ class YoutubeManager(YoutubeApiV3):
                 # self.self._apis_errored = []
                 if self.dbox is not None:
                     self.upload_logs()
-                    loop_cnt = 0
-            # Load necessary data
-            self.load_template_comments()
-            channel_ids = [channel["channel_id"] for channel in self.db.get_channels()]
-            commented_comments, video_links_commented = self.get_comments(
-                channel_ids=channel_ids, n_recent=500
-            )
-
-            latest_videos = self.get_uploads(
-                channels=channel_ids, max_posted_hours=self.max_posted_hours
-            )
+                loop_cnt = 0
             comments_added = []
+            added_comment = False  # Flag to check if commented on raised error
+
             # Sort the videos by the priority of the channels (channel_ids are sorted by priority)
             # and comment in the videos not already commented
             try:
@@ -599,7 +604,9 @@ class YoutubeManager(YoutubeApiV3):
             ]
             self.pretty_print(headers, comments)
 
-    def add_channel(self, channel_id: str = None, username: str = None) -> None:
+    def add_channel(
+        self, channel_id: str = None, username: str = None, active: bool = True
+    ) -> None:
         if channel_id:
             if channel_id == "search":
                 channel_info = {}
@@ -842,10 +849,11 @@ class YoutubeManager(YoutubeApiV3):
                     ]
 
     def get_next_template_comment(
-        self, channel_id: str, commented_comments: Dict
+        self, channel_id: str, commented_comments: Dict, self_comments_flags: Dict
     ) -> str:
         """TODO: Probably much more efficient with numpy or sql."""
         commented_comments = commented_comments[channel_id]
+        self_comments_flags = self_comments_flags[channel_id]
         available_comments = self.template_comments["default"].copy()
         # Build the comments pool
         if channel_id in self.template_comments:
@@ -857,10 +865,11 @@ class YoutubeManager(YoutubeApiV3):
                 )
         # Extract unique comments commented
         unique_com_coms = set(data["comment"] for data in commented_comments)
-        new_comments = set(available_comments) - unique_com_coms
+        new_comments = list(set(available_comments) - unique_com_coms)
+        random.shuffle(new_comments)
         if new_comments:  # If we have new template comments
             comment = next(iter(new_comments))
-        else:  # Otherwise, pick the oldest one (with duplicate handling
+        else:  # Otherwise, pick the oldest one (with duplicate handling)
             comment_dates = {}
             for unique_comment in unique_com_coms:
                 comment_dates[unique_comment] = parser.parse(
@@ -885,7 +894,8 @@ class YoutubeManager(YoutubeApiV3):
     def upload_logs(self):
         log_name = self.log_path.split(os.sep)[-1][:-4]
         day = datetime.today().day
-        log_name += f"_day{day}.txt"
+        hour = datetime.today().hour
+        log_name += f"_day{day}_hour{hour}.txt"
         upload_path = os.path.join(self.dbox_logs_folder_path, log_name)
         with open(self.log_path, "rb") as f:
             file_to_upload = f.read()
@@ -906,6 +916,13 @@ class YoutubeManager(YoutubeApiV3):
                     f"{self.dbox_keys_folder_path}/{file}", f"{self.keys_path}/{file}"
                 )
 
+    def raise_fatal(self, e, txt):
+        # Create file that prevents restarting
+        self.touch(self.crashed_file)
+        error_txt = f"{txt}:\n{e}"
+        logger.error(error_txt)
+        raise e
+
     def simulate_uploads(self, channels: List, max_posted_hours: int = 2) -> Dict:
         """Generates new uploads for the specified channels.
 
@@ -916,7 +933,7 @@ class YoutubeManager(YoutubeApiV3):
         num_videos = random.randint(1, 4)
         channels = [
             (channel["username"], channel["channel_id"])
-            for channel in self.db.get_channels()
+            for channel in self.db.get_channels(channel_cols=["username", "channel_id"])
         ]
         for video_ind in range(num_videos):
             vid_id = "".join(
@@ -968,8 +985,8 @@ class YoutubeManager(YoutubeApiV3):
         col_widths = [0] * len(headers)
         for row in output:
             for idx, column in enumerate(row):
-                if len(str(column)) > 100:
-                    row[idx] = row[idx][:94] + " (...)"
+                if len(str(column)) > 54 and idx != 6:
+                    row[idx] = row[idx][:50] + "(..)"
                 if len(str(row[idx])) > col_widths[idx]:
                     col_widths[idx] = len(row[idx])
 

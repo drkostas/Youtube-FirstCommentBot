@@ -70,12 +70,25 @@ def get_args() -> argparse.Namespace:
         help="Number of recent comments to get for `list_comments`",
     )
     optional_args.add_argument(
-        "--min_likes", default=-1, help="Number of minimum liked for `list_comments`"
+        "--min_likes", default=-1, help="Number of minimum likes for `list_comments`"
     )
     optional_args.add_argument(
         "--min_replies",
         default=-1,
         help="Number of minimum replies for `list_comments`",
+    )
+    optional_args.add_argument(
+        "--max_replies",
+        default=99999,
+        help="Number of maximum replies for `list_comments`",
+    )
+    optional_args.add_argument(
+        "--max_likes", default=99999, help="Number of maximum likes for `list_comments`"
+    )
+    optional_args.add_argument(
+        "--max_latency",
+        default=99999,
+        help="Number of maximum liked for `list_comments`",
     )
     optional_args.add_argument(
         "--priority", help="Priority number for specified channel for `set_priority`"
@@ -141,7 +154,12 @@ def list_channels(youtube: YoutubeManager, args: argparse.Namespace) -> None:
 
 def list_comments(youtube: YoutubeManager, args: argparse.Namespace) -> None:
     youtube.list_comments(
-        n_recent=args.n_recent, min_likes=args.min_likes, min_replies=args.min_replies
+        n_recent=args.n_recent,
+        min_likes=args.min_likes,
+        max_latency=int(args.max_latency),
+        max_likes=args.max_likes,
+        max_replies=args.max_replies,
+        min_replies=args.min_replies,
     )
 
 
@@ -189,7 +207,17 @@ def main():
     sleep_time = (
         int(you_conf["config"]["sleep_time"])
         if "sleep_time" in you_conf["config"]
-        else 120
+        else 15
+    )
+    fast_sleep_time = (
+        int(you_conf["config"]["fast_sleep_time"])
+        if "fast_sleep_time" in you_conf["config"]
+        else 1
+    )
+    slow_sleep_time = (
+        int(you_conf["config"]["slow_sleep_time"])
+        if "slow_sleep_time" in you_conf["config"]
+        else 60
     )
     max_posted_hours = (
         int(you_conf["config"]["max_posted_hours"])
@@ -209,6 +237,7 @@ def main():
     emailer_conf = None
     if "emailer" in conf_obj.config:  # Not implemented yet
         emailer_conf = conf_obj.get_config("emailer")[0]
+
     # Setup YouTube API
     youtube = YoutubeManager(
         config=you_conf["config"],
@@ -217,6 +246,8 @@ def main():
         comments_conf=comments_conf,
         like_bot_conf=like_bot_conf,
         sleep_time=sleep_time,
+        fast_sleep_time=fast_sleep_time,
+        slow_sleep_time=slow_sleep_time,
         max_posted_hours=max_posted_hours,
         api_type=you_conf["type"],
         tag=conf_obj.tag,
