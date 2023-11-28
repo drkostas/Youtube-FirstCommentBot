@@ -152,3 +152,4 @@ dmypy.json
 *.sql
 .history
 comments/*.txt
+test_comment.py
