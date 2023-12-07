@@ -14,6 +14,7 @@ import httplib2
 from threading import Thread
 import time
 from itertools import islice, cycle
+import traceback
 from youbot import ColorLogger
 
 logger = ColorLogger(logger_name='YoutubeApi', color='green')
@@ -254,6 +255,8 @@ class YoutubeApiV3(AbstractYoutubeApi):
         playlist_ids_lst = []
         if len(channels_lists) > 50:
             channels_lists = self.split_list(channels_lists, 50)
+        else:
+            channels_lists = [channels_lists]
         for channels in channels_lists:
             try:
                 channels_response = self._apis[0].channels().list(
@@ -261,12 +264,17 @@ class YoutubeApiV3(AbstractYoutubeApi):
                     part="contentDetails,snippet",
                     fields="items(id,contentDetails(relatedPlaylists(uploads)),snippet(title))"
                 ).execute()
-                channels_response = [item for item in channels_response["items"]
-                                     if item['snippet']['title'] != '']
-                playlist_ids_lst.extend(channels_response)
+                if "items" not in channels_response:
+                    logger.error(
+                        f"Got empty response for channels {channels} when trying to refresh playlists."
+                    )
+                    continue
+               for item in channels_response["items"]:
+                    if item["snippet"]["title"] != "":
+                        playlist_ids_lst.append(item)
             except Exception as e:
                 logger.error("Error refreshing some playlists..")
-                logger.error(e)
+                logger.error(f"{str(e)} : {traceback.format_exc()}")
                 continue
         self.channel_playlists = {playlist['id']: playlist for playlist in playlist_ids_lst}
 
