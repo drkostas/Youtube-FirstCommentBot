@@ -264,8 +264,9 @@ class YoutubeApiV3(AbstractYoutubeApi):
                     part="contentDetails,snippet",
                     fields="items(id,contentDetails(relatedPlaylists(uploads)),snippet(title))"
                 ).execute()
-                if "items" not in channels_response:
-                    logger.error(
+
+               if "items" not in channels_response:
+                    logger. error(
                         f"Got empty response for channels {channels} when trying to refresh playlists."
                     )
                     continue
