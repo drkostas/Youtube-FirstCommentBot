@@ -21,12 +21,27 @@ class YoutubeManager(YoutubeApiV3):
                  'dbox_logs_folder_path', 'dbox_keys_folder_path', 'comments_src',
                  'comment_search_term', 'crashed_file', 'num_comments_to_check')
 
-    def __init__(self, config: Dict, db_conf: Dict, cloud_conf: Dict, comments_conf: Dict,
-                 sleep_time: int, fast_sleep_time: int, slow_sleep_time: int, max_posted_hours: int,
-                 api_type: str, tag: str, log_path: str):
+    def __init__(self, config: Dict, db_conf: Dict, cloud_conf: Dict, comments_conf: Dict = None,
+                 sleep_time: int = 180, fast_sleep_time: int = 60, slow_sleep_time: int = 300,
+                 max_posted_hours: int = 24,
+                 api_type: str = 'normal', tag: str = '', log_path: str = ''):
         global logger
         logger = ColorLogger(logger_name=f'[{tag}] YoutubeManager', color='cyan')
-        self.db = YoutubeMySqlDatastore(config=db_conf['config'], tag=tag)
+        # Two ways to reach the same database. The bot owns its own connection and is handed
+        # credentials; the dashboard is a Flask app that already has an engine configured, so it
+        # hands over the app instead and the datastore attaches to that. The second path is also
+        # the one that can run from Vercel, because the app's engine there carries the statements
+        # over HTTPS rather than a socket.
+        # The dashboard passes neither comments nor sleep settings, which belong to the posting
+        # loop, so those arguments default rather than being required of every caller.
+        if db_conf.get('type') == 'flask_mysql':
+            from youbot.yt_flaskmysql import YoutubeFlaskMySqlDatastore
+            # A caller that already has a datastore hands it over instead of asking for a second
+            # one: building it attaches the SQLAlchemy extension to the Flask app, and that can
+            # only be done before the app serves its first request.
+            self.db = db_conf.get('instance') or YoutubeFlaskMySqlDatastore(app=db_conf['app'])
+        else:
+            self.db = YoutubeMySqlDatastore(config=db_conf['config'], tag=tag)
         self.comments_conf = None
         if comments_conf is not None:
             self.comments_src = comments_conf['type']

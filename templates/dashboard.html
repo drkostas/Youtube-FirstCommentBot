@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Facterino Dashboard</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link
+      rel="icon"
+      href="{{ url_for('static', filename='img/favicon.ico') }}"
+    />
+  </head>
+  <body>
+    <div id="dashboard">
+      <div id="header">
+        <h1>Facterino Dashboard</h1>
+        <button
+          onclick="parent.open('https://drkostas.grafana.net/public-dashboards/269d6271600f4f6e97e7db6d9ee44335')"
+          class="open-comment"
+        >
+          Grafana
+        </button>
+      </div>
+      <section id="channels" class="resizable">
+        <div id="header">
+          <h2>Channels</h2>
+          <button id="add-channel-btn">Add New Channel</button>
+          <button id="refresh-btn">Refresh Photos</button>
+        </div>
+        <!-- Channel Card -->
+        <div id="channels-section" class="child-resize"></div>
+      </section>
+      <section id="comments" class="resizable">
+        <div id="header">
+          <h2>Comments</h2>
+        </div>
+        <div id="comments-section" class="child-resize"></div>
+      </section>
+      <!-- Add Channel Modal -->
+      <div id="add-channel-modal" class="modal">
+        <div class="modal-content">
+          <span class="close">&times;</span>
+          <form id="add-channel-form">
+            <input
+              type="text"
+              id="channel-id"
+              placeholder="Enter Channel ID"
+              required
+            />
+            <button type="submit">Submit</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  </body>
+</html>
