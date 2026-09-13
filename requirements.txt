@@ -13,3 +13,15 @@ termcolor-logger==1.0.3
 high_sql==1.0.2
 pyemail_sender==1.0.1
 cloud_filemanager==1.0.1
+
+# The dashboard's own dependencies. They were missing: everything above is what the posting loop
+# needs, and flask_app.py was running only because the machine it ran on happened to have these
+# installed. A build elsewhere had nothing to import Flask from.
+# Pinned to the versions the dashboard is verified against rather than floated, so a release of
+# any of them cannot change what is serving without the change being made here first.
+Flask==3.1.3
+Flask-SQLAlchemy==3.1.1
+Flask-BasicAuth==0.2.0
+SQLAlchemy==2.0.52
+PyMySQL==1.2.0
+python-dotenv==1.2.3

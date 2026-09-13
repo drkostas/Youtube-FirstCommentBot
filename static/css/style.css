@@ -1,0 +1,615 @@
+/* Resetting default browser styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body,
+html {
+  height: 100%;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: url('/static/img/space.png') no-repeat center center fixed;
+  background-size: cover;
+  color: #f8f8f2;
+}
+
+
+h1 {
+  color: #50fa7b;
+  text-align: center;
+  font-size: 2em;
+}
+
+h2 {
+  color: #bd93f9;
+  font-size: 1.5em;
+  border-bottom: 2px solid #50fa7b;
+  padding-bottom: 5px;
+}
+
+.channel-card,
+.comment-card {
+  background-color: #44475a;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.channel-card img,
+.comment-card img {
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  margin-right: 15px;
+}
+
+.channel-details,
+.comment-details {
+  flex-grow: 1;
+}
+
+.channel-details h3,
+.comment-details p {
+  margin-bottom: 10px;
+}
+
+input[type="number"],
+input[type="text"],
+.priority-input,
+.delay-input {
+  background-color: #6272a4;
+  border: none;
+  color: white;
+  padding: 10px;
+  border-radius: 4px;
+  margin-right: 10px;
+  width: 100px;
+  /* Adjust width as needed */
+}
+
+input[type="checkbox"] {
+  accent-color: #50fa7b;
+}
+
+button {
+  background-color: #6272a4;
+  border: none;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background-color: #50fa7b;
+}
+
+/* Scrollable containers */
+#channels-section,
+#comments-section {
+  /* max-height: 400px; */
+  /* Adjust height as needed */
+  overflow-y: auto;
+}
+
+/* Add Channel button style */
+#add-channel-btn,
+#refresh-btn {
+  background-color: #bd93f9;
+  color: #282a36;
+}
+
+
+
+/* Form styles */
+form {
+  margin-top: 20px;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+input[type="text"],
+input[type="number"] {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+input[type="submit"] {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  border: none;
+  background-color: #50fa7b;
+  color: #282a36;
+  cursor: pointer;
+}
+
+input[type="submit"]:hover {
+  background-color: #6272a4;
+  color: white;
+}
+
+/* Toggle Switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked+.slider {
+  background-color: #50fa7b;
+}
+
+input:focus+.slider {
+  box-shadow: 0 0 1px #50fa7b;
+}
+
+input:checked+.slider:before {
+  -webkit-transform: translateX(26px);
+  -ms-transform: translateX(26px);
+  transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+/* Adding some animations to links and buttons */
+a,
+button {
+  -webkit-transition: all 0.3s ease;
+  transition: all 0.3s ease;
+}
+
+a:hover,
+button:hover {
+  text-decoration: none;
+  opacity: 0.8;
+}
+
+/* Utility classes for spacing */
+.mt-1 {
+  margin-top: 10px;
+}
+
+.mb-1 {
+  margin-bottom: 10px;
+}
+
+.mt-2 {
+  margin-top: 20px;
+}
+
+.mb-2 {
+  margin-bottom: 20px;
+}
+
+/* Ensuring the content is always at the center of the screen */
+.content-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+/* Reset and basic styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body,
+html {
+  height: 100%;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #232741;
+  color: #f8f8f2;
+  overflow-x: hidden;
+}
+
+#dashboard {
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 90%;
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: rgba(68, 71, 90, 0.9);
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+
+/* Channel and Comment card styles */
+.channel-card,
+.comment-card {
+  background-color: rgba(68, 71, 90, 0.9);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* .channel-header {
+  max-width: 30%;
+}
+
+.channel-actions {
+  max-width: 70%;
+} */
+
+.comment-header {
+  max-width: 20%;
+}
+
+.comment-body {
+  width: 85%;
+}
+
+.channel-image,
+.comment-image {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  margin-right: 15px;
+}
+
+.channel-details,
+.comment-details {
+  flex: 1;
+}
+
+.channel-info,
+.comment-info {
+  margin-right: 20px;
+}
+
+.channel-name,
+.comment-content {
+  color: #50fa7b;
+  font-weight: 600;
+  margin-bottom: 5px;
+  font-size: 1rem;
+}
+
+.channel-stats,
+.comment-stats {
+  color: #8be9fd;
+  font-size: 0.85rem;
+  margin-bottom: 5px;
+}
+
+/* Input fields and buttons */
+input[type="number"],
+input[type="text"] {
+  background-color: #6272a4;
+  border: 1px solid #6272a4;
+  border-radius: 4px;
+  color: #f8f8f2;
+  padding: 10px;
+  width: auto;
+  transition: all 0.3s;
+}
+
+input[type="number"]:focus,
+input[type="text"]:focus {
+  outline: none;
+  border-color: #ff79c6;
+}
+
+button {
+  background-color: #50fa7b;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 15px;
+  color: #282a36;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+button:hover {
+  background-color: #6272a4;
+  color: white;
+}
+
+
+/* Containers for scrollable content */
+#channels-section,
+#comments-section {
+  /* max-height: 500px; */
+  /* Adjust height as necessary */
+  overflow-y: auto;
+  padding-right: 10px;
+  /* To avoid cutting the scrollbar */
+}
+
+
+/* Additional spacing and visual adjustments */
+.mt-1 {
+  margin-top: 10px;
+}
+
+.mb-1 {
+  margin-bottom: 10px;
+}
+
+.mt-2 {
+  margin-top: 20px;
+}
+
+.mb-2 {
+  margin-bottom: 20px;
+}
+
+/* Ensure buttons and inputs align nicely */
+.channel-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* Creates consistent spacing between elements */
+}
+
+/* Open Channel button style */
+.open-channel-btn {
+  background-color: transparent;
+  border: 1px solid #50fa7b;
+  color: #50fa7b;
+  transition: all 0.3s ease;
+}
+
+.open-channel-btn:hover {
+  background-color: #50fa7b;
+  color: #282a36;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  h2 {
+    font-size: 20px;
+  }
+
+  .channel-card,
+  .comment-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .channel-actions,
+  .comment-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* Animation for background */
+@keyframes moveBackground {
+  0% {
+    background-position: 0 0;
+  }
+
+  100% {
+    background-position: -1000px 0;
+  }
+}
+
+
+#header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+  margin-bottom: 20px;
+}
+
+
+#comments {
+  position: relative;
+  padding: 20px;
+  width: 1000px;
+}
+
+#channels {
+  position: relative;
+  padding: 20px;
+  width: 900px;
+}
+
+
+section {
+  background-color: rgba(30, 31, 41, 0.7);
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  max-width: 1100px;
+}
+
+add-channel-btn {
+  background-color: #bd93f9;
+  color: #282a36;
+}
+
+
+/* Modal styles */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+.modal-content {
+  background-color: rgba(30, 31, 41, 0.9);
+  margin: 10% auto;
+  padding: 20px;
+  border: 1px solid #444;
+  width: 20%;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+input::placeholder {
+  color: white;
+  opacity: 0.5;
+}
+
+
+#knob-container {
+  margin-bottom: 20px;
+}
+
+.dial {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background-color: #ddd;
+  outline: none;
+  transform: rotate(-45deg);
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid #888;
+}
+
+.dial::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.spinner-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner-controls button {
+  width: 30px;
+  height: 30px;
+  border: none;
+  background-color: #888;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.spinner-controls input {
+  width: 50px;
+  text-align: center;
+  border: 1px solid #ccc;
+}
+
+.stats {
+  font-size: 14px;
+  color: #add;
+}
+
+.comment-text {
+  font-size: 16px;
+  color: #fff;
+}
+
+.resizable {
+  resize: both;
+  overflow: auto;
+  border: 1px solid #ccc;
+  /* Optional: for better visibility */
+  min-height: 100px;
+  /* Minimum height */
+  min-width: 100px;
+  /* Minimum width */
+}
+
+.child-resize {
+  width: 100%;
+  height: 100%;
+}
+
+#comments{
+  height: 700px;
+  overflow-y: hidden;
+}
+
+#channels{
+  height: 500px;
+  overflow-y: hidden;
+}
