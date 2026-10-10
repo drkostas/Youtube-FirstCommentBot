@@ -1,3 +1,5 @@
+![Youtube-FirstCommentBot](docs/images/banner.png)
+
 # Youtube Comment Bot
 
 [![CircleCI](https://circleci.com/gh/drkostas/Youtube-FirstCommentBot/tree/master.svg?style=svg)](https://circleci.com/gh/drkostas/Youtube-FirstCommentBot/tree/master)
