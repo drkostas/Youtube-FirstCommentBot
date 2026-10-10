@@ -1,0 +1,15 @@
+kind: banner
+name: Youtube-FirstCommentBot
+line: A bot that watches YouTube channels and posts the first comment on each new
+  video.
+accent: rose
+diagram:
+- pane:
+    label: new video
+- arrow
+- server:
+    label: bot
+- arrow
+- box:
+    text: first comment
+    accent: true
